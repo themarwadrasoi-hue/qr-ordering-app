@@ -1,0 +1,9 @@
+{
+  "appId": "com.marwadrasoi.app",
+  "appName": "THE MARWAD RASOI",
+  "webDir": "dist",
+  "server": {
+    "url": "https://2cee20f455cb06.lhr.life",
+    "cleartext": true
+  }
+}

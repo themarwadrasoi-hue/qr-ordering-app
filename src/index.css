@@ -1,0 +1,232 @@
+/* =========================================
+   DESIGN SYSTEM - PREMIUM THEME
+   ========================================= */
+
+:root {
+  /* --- COLOR PALETTE (Dynamic & Premium) --- */
+  --primary: #FFB703;
+  /* Vibrant Gold/Orange - Appetite stimulating */
+  --primary-hover: #FB8500;
+  --secondary: #023047;
+  /* Deep Blue - Trust & Premium feel */
+  --accent: #219EBC;
+  /* Cyan/Teal - Freshness */
+
+  --background: #121212;
+  /* Deep Dark Background */
+  --surface: #1E1E1E;
+  /* Slightly lighter for cards */
+  --surface-glass: rgba(30, 30, 30, 0.7);
+  /* Glassmorphism base */
+
+  --text-main: #FFFFFF;
+  --text-secondary: #B0B0B0;
+  --text-muted: #666666;
+
+  --success: #2E8B57;
+  /* Sea Green */
+  --danger: #EF476F;
+  /* Vibrant Red/Pink */
+  --warning: #FFD166;
+
+  /* --- TYPOGRAPHY --- */
+  --font-heading: 'Outfit', 'Inter', sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+
+  /* --- SPACING & SIZING --- */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+
+  /* --- SHADOWS --- */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.3);
+  --shadow-neon: 0 0 10px rgba(255, 183, 3, 0.3);
+
+  /* --- ANIMATIONS --- */
+  --transition-fast: 0.2s ease;
+  --transition-smooth: 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* --- RESET & BASE --- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  /* Remove mobile tap gloss */
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  background-color: var(--background);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+button {
+  font-family: var(--font-heading);
+}
+
+/* --- UTILITIES --- */
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-md);
+}
+
+.glass-panel {
+  background: var(--surface-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-md);
+}
+
+.flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: none;
+  outline: none;
+  gap: 8px;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #000;
+}
+
+.btn-primary:active {
+  transform: scale(0.96);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+}
+
+.btn-danger {
+  background: rgba(239, 71, 111, 0.15);
+  color: var(--danger);
+}
+
+.btn-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  padding: 0;
+}
+
+/* --- ANIMATION KEYFRAMES --- */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes popIn {
+  0% {
+    transform: scale(0.9) translateY(20px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulseSubtle {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 183, 3, 0.4);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 183, 3, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 183, 3, 0);
+  }
+}
+
+/* --- RESPONSIVE TYPOGRAPHY --- */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 1.8rem;
+  }
+
+  h2 {
+    font-size: 1.4rem;
+  }
+
+  .container {
+    padding: var(--spacing-sm);
+  }
+}
+
+/* --- NO PRINT UTILITY --- */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white;
+    color: black;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+}
