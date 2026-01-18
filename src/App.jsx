@@ -114,19 +114,63 @@ function App() {
   }
 
   const placeOrder = () => {
-    const newOrder = {
-      id: Date.now().toString(),
-      tableId,
-      items: cart,
-      total: cart.reduce((sum, item) => sum + (item.price * item.qty), 0),
-      timestamp: Date.now(),
-      status: 'pending'
+    // Capture customer location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const newOrder = {
+            id: Date.now().toString(),
+            tableId,
+            items: cart,
+            total: cart.reduce((sum, item) => sum + (item.price * item.qty), 0),
+            timestamp: Date.now(),
+            status: 'pending',
+            location: {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              accuracy: position.coords.accuracy
+            }
+          }
+          socket?.emit('place-order', newOrder)
+          setCart([])
+          setIsCartOpen(false)
+          setOrderPlaced(true)
+        },
+        (error) => {
+          // If location access denied or failed, place order without location
+          console.log('Location access denied or failed:', error.message)
+          const newOrder = {
+            id: Date.now().toString(),
+            tableId,
+            items: cart,
+            total: cart.reduce((sum, item) => sum + (item.price * item.qty), 0),
+            timestamp: Date.now(),
+            status: 'pending',
+            location: null
+          }
+          socket?.emit('place-order', newOrder)
+          setCart([])
+          setIsCartOpen(false)
+          setOrderPlaced(true)
+        },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+      )
+    } else {
+      // Browser doesn't support geolocation
+      const newOrder = {
+        id: Date.now().toString(),
+        tableId,
+        items: cart,
+        total: cart.reduce((sum, item) => sum + (item.price * item.qty), 0),
+        timestamp: Date.now(),
+        status: 'pending',
+        location: null
+      }
+      socket?.emit('place-order', newOrder)
+      setCart([])
+      setIsCartOpen(false)
+      setOrderPlaced(true)
     }
-
-    socket?.emit('place-order', newOrder)
-    setCart([])
-    setIsCartOpen(false)
-    setOrderPlaced(true)
   }
 
   const copyMenuLink = () => {

@@ -16,6 +16,39 @@ export default function AdminOrderCard({ order, onComplete }) {
                 <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{timeStr}</span>
             </div>
 
+            {/* Location Information */}
+            {order.location && (
+                <div style={{
+                    background: 'rgba(255,255,255,0.05)',
+                    padding: '8px',
+                    borderRadius: '6px',
+                    marginBottom: 'var(--spacing-sm)',
+                    fontSize: '0.85rem'
+                }}>
+                    <div style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                        📍 Customer Location
+                    </div>
+                    <div style={{ color: 'var(--text-main)', marginBottom: '4px' }}>
+                        Lat: {order.location.latitude.toFixed(6)}, Lng: {order.location.longitude.toFixed(6)}
+                    </div>
+                    <a
+                        href={`https://www.google.com/maps?q=${order.location.latitude},${order.location.longitude}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                            color: 'var(--primary)',
+                            textDecoration: 'none',
+                            fontSize: '0.8rem',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                        }}
+                    >
+                        🗺️ Open in Google Maps →
+                    </a>
+                </div>
+            )}
+
             <div style={{ marginBottom: 'var(--spacing-md)', borderTop: '1px solid var(--border-subtle)', paddingTop: 'var(--spacing-sm)' }}>
                 {order.items.map((item, idx) => (
                     <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
