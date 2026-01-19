@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 
-export default function WaiterCallNotification({ call, onAcknowledge }) {
+export default function WaiterCallNotification({ calls, onAcknowledge }) {
     const audioRef = useRef(null)
     const [isAudioBlocked, setIsAudioBlocked] = useState(false)
 
@@ -17,25 +17,21 @@ export default function WaiterCallNotification({ call, onAcknowledge }) {
     }
 
     useEffect(() => {
-        if (call) {
+        if (calls && calls.length > 0) {
             playSound();
-
             // Vibrate if supported
             if (navigator.vibrate) {
                 navigator.vibrate([200, 100, 200, 100, 200])
             }
+        } else {
+            if (audioRef.current) {
+                audioRef.current.pause()
+                audioRef.current.currentTime = 0
+            }
         }
-    }, [call])
+    }, [calls])
 
-    if (!call) return null
-
-    const handleAcknowledge = () => {
-        if (audioRef.current) {
-            audioRef.current.pause()
-            audioRef.current.currentTime = 0
-        }
-        onAcknowledge(call.tableId)
-    }
+    if (!calls || calls.length === 0) return null
 
     return (
         <div style={{
@@ -51,7 +47,8 @@ export default function WaiterCallNotification({ call, onAcknowledge }) {
             alignItems: 'center',
             justifyContent: 'center',
             animation: 'fadeIn 0.3s ease',
-            padding: '20px'
+            padding: '20px',
+            overflowY: 'auto'
         }}>
             {/* Audio Element */}
             <audio ref={audioRef} loop autoPlay>
@@ -79,81 +76,82 @@ export default function WaiterCallNotification({ call, onAcknowledge }) {
                 </div>
             )}
 
-            {/* Bell Icon Animation */}
-            <div style={{
-                fontSize: 'clamp(5rem, 15vw, 8rem)',
-                marginBottom: '30px',
-                animation: 'ringBell 0.8s infinite'
-            }}>
-                🔔
+            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                <div style={{
+                    fontSize: '4rem',
+                    animation: 'ringBell 0.8s infinite',
+                    display: 'inline-block'
+                }}>🔔</div>
+                <h1 style={{ color: '#ffc107', fontSize: '2.5rem', fontWeight: '900', margin: '10px 0' }}>
+                    WAITER SERVICE CALLS
+                </h1>
             </div>
 
-            {/* Table Number */}
-            <h1 style={{
-                fontSize: 'clamp(2rem, 8vw, 4rem)',
-                color: '#ffc107',
-                marginBottom: '10px',
-                fontWeight: '900',
-                textAlign: 'center',
-                textShadow: '0 0 20px rgba(255, 193, 7, 0.5)'
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: '20px',
+                width: '100%',
+                maxWidth: '1200px'
             }}>
-                Table {call.tableId}
-            </h1>
-
-            <p style={{
-                fontSize: 'clamp(1rem, 4vw, 1.5rem)',
-                color: '#fff',
-                marginBottom: '20px',
-                textAlign: 'center'
-            }}>
-                is calling for service
-            </p>
-
-            {/* Time */}
-            <p style={{
-                fontSize: '0.9rem',
-                color: 'rgba(255, 255, 255, 0.6)',
-                marginBottom: '40px'
-            }}>
-                {new Date(call.timestamp).toLocaleTimeString()}
-            </p>
-
-            {/* Acknowledge Button */}
-            <button
-                onClick={handleAcknowledge}
-                style={{
-                    padding: '20px 60px',
-                    fontSize: '1.5rem',
-                    fontWeight: 'bold',
-                    background: 'linear-gradient(135deg, #4caf50 0%, #45a049 100%)',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '50px',
-                    cursor: 'pointer',
-                    boxShadow: '0 8px 30px rgba(76, 175, 80, 0.4)',
-                    transition: 'all 0.3s ease',
-                    animation: 'pulse 2s infinite'
-                }}
-            >
-                ✓ Acknowledge
-            </button>
+                {calls.map((call) => (
+                    <div
+                        key={call.tableId}
+                        style={{
+                            background: 'rgba(255,255,255,0.05)',
+                            padding: '30px',
+                            borderRadius: '20px',
+                            border: '2px solid var(--primary)',
+                            textAlign: 'center',
+                            boxShadow: '0 10px 40px rgba(255,193,7,0.1)',
+                            animation: 'popIn 0.3s ease'
+                        }}
+                    >
+                        <h2 style={{ fontSize: '3rem', color: '#fff', marginBottom: '10px' }}>
+                            Table {call.tableId}
+                        </h2>
+                        <p style={{ color: 'rgba(255,255,255,0.8)', marginBottom: '20px' }}>
+                            Calling since {new Date(call.timestamp).toLocaleTimeString()}
+                        </p>
+                        <button
+                            onClick={() => onAcknowledge(call.tableId)}
+                            style={{
+                                padding: '15px 40px',
+                                fontSize: '1.2rem',
+                                fontWeight: 'bold',
+                                background: 'linear-gradient(135deg, #4caf50 0%, #45a049 100%)',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '50px',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                width: '100%'
+                            }}
+                        >
+                            Acknowledge
+                        </button>
+                    </div>
+                ))}
+            </div>
 
             <style>{`
-        @keyframes ringBell {
-          0%, 100% { transform: rotate(-15deg); }
-          50% { transform: rotate(15deg); }
-        }
-        
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-        }
-      `}</style>
+                @keyframes ringBell {
+                    0%, 100% { transform: rotate(-15deg); }
+                    50% { transform: rotate(15deg); }
+                }
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                @keyframes pulse {
+                    0%, 100% { transform: scale(1); }
+                    50% { transform: scale(1.05); }
+                }
+                @keyframes popIn {
+                    from { transform: scale(0.8); opacity: 0; }
+                    to { transform: scale(1); opacity: 1; }
+                }
+            `}</style>
         </div>
     )
 }

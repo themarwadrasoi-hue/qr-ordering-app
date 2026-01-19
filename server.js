@@ -79,6 +79,7 @@ io.on('connection', (socket) => {
         if (!waiterCalls.find(c => c.tableId === data.tableId)) {
             waiterCalls.push(data);
             io.emit('waiter-call-received', data);
+            io.emit('waiter-calls-updated', waiterCalls);
         }
     });
 

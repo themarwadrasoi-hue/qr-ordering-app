@@ -34,7 +34,6 @@ function App() {
 
   // Notification State
   const [notification, setNotification] = useState(null)
-  const [activeWaiterCall, setActiveWaiterCall] = useState(null)
 
   // Data State (Synced via Server)
   const [menu, setMenu] = useState(initialMenuItems)
@@ -110,9 +109,7 @@ function App() {
     })
 
     newSocket.on('waiter-call-received', (call) => {
-      if (window.location.pathname.startsWith('/admin')) {
-        setActiveWaiterCall(call)
-      }
+      // Logic handled by waiter-calls-updated primarily
     })
 
     newSocket.on('waiter-calls-updated', (calls) => {
@@ -155,7 +152,6 @@ function App() {
 
   const acknowledgeWaiterCall = (tId) => {
     socket?.emit('acknowledge-waiter-call', tId)
-    setActiveWaiterCall(null)
   }
 
   const clearTableBill = (tId) => {
@@ -308,7 +304,7 @@ function App() {
 
         {/* Admin Notifications */}
         <WaiterCallNotification
-          call={activeWaiterCall}
+          calls={waiterCalls}
           onAcknowledge={acknowledgeWaiterCall}
         />
 
