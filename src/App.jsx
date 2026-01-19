@@ -11,6 +11,11 @@ import { menuItems as initialMenuItems } from './data/menu'
 import AdminMenuManager from './components/AdminMenuManager'
 import AdminQRGenerator from './components/AdminQRGenerator'
 import AdminReports from './components/AdminReports'
+import AdminTableBills from './components/AdminTableBills'
+
+import CallWaiterButton from './components/CallWaiterButton'
+import WaiterCallNotification from './components/WaiterCallNotification'
+import TableBillView from './components/TableBillView'
 
 // Socket.io
 import { io } from 'socket.io-client'
@@ -18,7 +23,8 @@ import { io } from 'socket.io-client'
 function App() {
   const [isAdmin, setIsAdmin] = useState(window.location.pathname.startsWith('/admin'))
   const [tableId, setTableId] = useState(new URLSearchParams(window.location.search).get('table') || null)
-  const [adminView, setAdminView] = useState('orders') // 'orders' | 'menu' | 'qr' | 'settings' | 'reports'
+  const [adminView, setAdminView] = useState('orders') // 'orders' | 'menu' | 'qr' | 'settings' | 'reports' | 'bills'
+  const [customerView, setCustomerView] = useState('choice') // 'choice' | 'menu'
 
   // App State
   const [activeCategory, setActiveCategory] = useState('all')
@@ -28,12 +34,19 @@ function App() {
 
   // Notification State
   const [notification, setNotification] = useState(null)
+  const [activeWaiterCall, setActiveWaiterCall] = useState(null)
 
   // Data State (Synced via Server)
   const [menu, setMenu] = useState(initialMenuItems)
+  const [categoriesState, setCategoriesState] = useState(categories)
   const [orders, setOrders] = useState([])
   const [orderHistory, setOrderHistory] = useState([])
   const [whatsappNumber, setWhatsappNumber] = useState('919602755557')
+
+  // NEW State
+  const [tableBills, setTableBills] = useState({})
+  const [waiterCalls, setWaiterCalls] = useState([])
+  const [isBillOpen, setIsBillOpen] = useState(false)
 
   // Initialize Socket Connection
   useEffect(() => {
@@ -43,12 +56,7 @@ function App() {
     if (tId) setTableId(tId)
 
     const isDev = window.location.hostname === 'localhost' && window.location.port === '5173'
-    // If running in an APK (Capacitor), window.location.origin might be localhost. 
-    // We want the app to connect to the remote server.
     let socketUrl = isDev ? 'http://localhost:3000' : window.location.origin
-
-    // TIP: If the APK is not connecting on mobile, uncomment and hardcode your public URL here:
-    // socketUrl = 'https://your-marwad-rasoi-link.loca.lt'
 
     const newSocket = io(socketUrl)
     setSocket(newSocket)
@@ -56,22 +64,22 @@ function App() {
     // Listeners
     newSocket.on('sync-state', (data) => {
       if (data.menu && data.menu.length > 0) setMenu(data.menu)
+      if (data.categories && data.categories.length > 0) setCategoriesState(data.categories)
       if (data.orders) setOrders(data.orders)
       if (data.whatsappNumber) setWhatsappNumber(data.whatsappNumber)
       if (data.orderHistory) setOrderHistory(data.orderHistory)
+      if (data.tableBills) setTableBills(data.tableBills)
+      if (data.waiterCalls) setWaiterCalls(data.waiterCalls)
     })
 
     newSocket.on('new-order', (order) => {
       // Show notification on Admin page
       if (window.location.pathname.startsWith('/admin')) {
         setNotification(`New Order from Table ${order.tableId || 'Unknown'}`)
-        // Optional: Play sound
         try {
           const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3')
           audio.play()
-        } catch (e) {
-          console.log('Audio play failed')
-        }
+        } catch (e) { }
         setTimeout(() => setNotification(null), 5000)
       }
     })
@@ -88,12 +96,39 @@ function App() {
       setMenu(newMenu)
     })
 
+    newSocket.on('categories-updated', (newCats) => {
+      setCategoriesState(newCats)
+    })
+
     newSocket.on('settings-updated', (settings) => {
       if (settings.whatsappNumber !== undefined) setWhatsappNumber(settings.whatsappNumber)
     })
 
+    // NEW Listeners
+    newSocket.on('table-bills-updated', (newBills) => {
+      setTableBills(newBills)
+    })
+
+    newSocket.on('waiter-call-received', (call) => {
+      if (window.location.pathname.startsWith('/admin')) {
+        setActiveWaiterCall(call)
+      }
+    })
+
+    newSocket.on('waiter-calls-updated', (calls) => {
+      setWaiterCalls(calls)
+    })
+
+    newSocket.on('table-bill-cleared', (data) => {
+      if (tableId === data.tableId) {
+        setIsBillOpen(false)
+        setNotification("Your bill has been cleared. Thank you!")
+        setTimeout(() => setNotification(null), 5000)
+      }
+    })
+
     return () => newSocket.close()
-  }, [])
+  }, [tableId])
 
 
   const [orderPlaced, setOrderPlaced] = useState(false)
@@ -102,6 +137,11 @@ function App() {
   const updateMenu = (newMenu) => {
     setMenu(newMenu) // Optimistic update
     socket?.emit('update-menu', newMenu)
+  }
+
+  const updateCategories = (newCats) => {
+    setCategoriesState(newCats)
+    socket?.emit('update-categories', newCats)
   }
 
   const updateWhatsapp = (num) => {
@@ -113,50 +153,18 @@ function App() {
     socket?.emit('update-order-status', { orderId, status: 'completed' })
   }
 
+  const acknowledgeWaiterCall = (tId) => {
+    socket?.emit('acknowledge-waiter-call', tId)
+    setActiveWaiterCall(null)
+  }
+
+  const clearTableBill = (tId) => {
+    socket?.emit('clear-table-bill', tId)
+  }
+
   const placeOrder = () => {
     // Capture customer location
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const newOrder = {
-            id: Date.now().toString(),
-            tableId,
-            items: cart,
-            total: cart.reduce((sum, item) => sum + (item.price * item.qty), 0),
-            timestamp: Date.now(),
-            status: 'pending',
-            location: {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-              accuracy: position.coords.accuracy
-            }
-          }
-          socket?.emit('place-order', newOrder)
-          setCart([])
-          setIsCartOpen(false)
-          setOrderPlaced(true)
-        },
-        (error) => {
-          // If location access denied or failed, place order without location
-          console.log('Location access denied or failed:', error.message)
-          const newOrder = {
-            id: Date.now().toString(),
-            tableId,
-            items: cart,
-            total: cart.reduce((sum, item) => sum + (item.price * item.qty), 0),
-            timestamp: Date.now(),
-            status: 'pending',
-            location: null
-          }
-          socket?.emit('place-order', newOrder)
-          setCart([])
-          setIsCartOpen(false)
-          setOrderPlaced(true)
-        },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-      )
-    } else {
-      // Browser doesn't support geolocation
+    const sendOrder = (pos = null) => {
       const newOrder = {
         id: Date.now().toString(),
         tableId,
@@ -164,12 +172,29 @@ function App() {
         total: cart.reduce((sum, item) => sum + (item.price * item.qty), 0),
         timestamp: Date.now(),
         status: 'pending',
-        location: null
+        location: pos ? {
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          accuracy: pos.coords.accuracy
+        } : null
       }
       socket?.emit('place-order', newOrder)
       setCart([])
       setIsCartOpen(false)
       setOrderPlaced(true)
+    }
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => sendOrder(position),
+        (error) => {
+          console.log('Location access denied or failed:', error.message)
+          sendOrder()
+        },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+      )
+    } else {
+      sendOrder()
     }
   }
 
@@ -187,6 +212,8 @@ function App() {
 
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0)
   const cartCount = cart.reduce((sum, item) => sum + item.qty, 0)
+
+  const currentTableBill = tableBills[tableId] || { orders: [], total: 0 }
 
   // Local Cart Logic (Client Only)
   const addToCart = (item) => {
@@ -231,6 +258,7 @@ function App() {
 
         <div className="no-print" style={{ display: 'flex', gap: 'var(--spacing-md)', marginBottom: 'var(--spacing-lg)', overflowX: 'auto', paddingBottom: '5px' }}>
           <button onClick={() => setAdminView('orders')} style={getTabStyle(adminView === 'orders')}>Orders</button>
+          <button onClick={() => setAdminView('bills')} style={getTabStyle(adminView === 'bills')}>Table Bills</button>
           <button onClick={() => setAdminView('reports')} style={getTabStyle(adminView === 'reports')}>Reports</button>
           <button onClick={() => setAdminView('menu')} style={getTabStyle(adminView === 'menu')}>Edit Menu</button>
           <button onClick={() => setAdminView('qr')} style={getTabStyle(adminView === 'qr')}>QR Codes</button>
@@ -248,10 +276,17 @@ function App() {
               ))
             )}
           </div>
+        ) : adminView === 'bills' ? (
+          <AdminTableBills tableBills={tableBills} onClearBill={clearTableBill} />
         ) : adminView === 'reports' ? (
           <AdminReports history={orderHistory} />
         ) : adminView === 'menu' ? (
-          <AdminMenuManager menu={menu} onUpdate={updateMenu} />
+          <AdminMenuManager
+            menu={menu}
+            categories={categoriesState}
+            onUpdate={updateMenu}
+            onUpdateCategories={updateCategories}
+          />
         ) : adminView === 'qr' ? (
           <AdminQRGenerator />
         ) : (
@@ -270,6 +305,12 @@ function App() {
             </p>
           </div>
         )}
+
+        {/* Admin Notifications */}
+        <WaiterCallNotification
+          call={activeWaiterCall}
+          onAcknowledge={acknowledgeWaiterCall}
+        />
 
         <a href="/" className="no-print" style={{ display: 'block', marginTop: '40px', color: 'var(--text-secondary)', textDecoration: 'underline' }}>
           Back to Menu
@@ -373,17 +414,108 @@ function App() {
     )
   }
 
+  // Customer Choice Screen (If tableId exists but hasn't entered menu)
+  if (tableId && !isAdmin && customerView === 'choice') {
+    return (
+      <div style={{
+        height: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px',
+        textAlign: 'center',
+        background: 'linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), url(https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1000&q=80) center/cover'
+      }}>
+        <h1 style={{ fontSize: '2.5rem', color: 'var(--primary)', marginBottom: '1rem' }}>WELCOME TO</h1>
+        <h2 style={{ fontSize: '3rem', color: '#fff', marginBottom: '2.5rem', fontWeight: '900' }}>THE MARWAD RASOI</h2>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%', maxWidth: '400px' }}>
+          <button
+            onClick={() => setCustomerView('menu')}
+            style={{
+              padding: '25px',
+              fontSize: '1.4rem',
+              fontWeight: 'bold',
+              background: 'linear-gradient(135deg, var(--primary) 0%, #ff9800 100%)',
+              color: '#000',
+              border: 'none',
+              borderRadius: '20px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '15px',
+              boxShadow: '0 10px 30px rgba(255, 193, 7, 0.3)',
+              transition: 'transform 0.2s'
+            }}
+            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
+            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            <span style={{ fontSize: '2rem' }}>🍽️</span>
+            <span>Browse Menu</span>
+          </button>
+
+          <button
+            onClick={() => {
+              socket?.emit('call-waiter', { tableId, timestamp: Date.now() })
+              setNotification("Waiter called for Table " + tableId)
+              setTimeout(() => setNotification(null), 5000)
+            }}
+            style={{
+              padding: '25px',
+              fontSize: '1.4rem',
+              fontWeight: 'bold',
+              background: 'rgba(255,255,255,0.05)',
+              color: '#fff',
+              border: '2px solid rgba(255,255,255,0.2)',
+              borderRadius: '20px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '15px',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.1)'
+              e.currentTarget.style.borderColor = 'var(--primary)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'
+            }}
+          >
+            <span style={{ fontSize: '2rem' }}>🔔</span>
+            <span>Call Waiter</span>
+          </button>
+
+          <div style={{ marginTop: '20px', color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>
+            Table Number: <strong style={{ color: 'var(--primary)' }}>{tableId}</strong>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // Customer View
   return (
     <div style={{ position: 'relative' }}>
-      <Header tableId={tableId} />
+      <Header
+        tableId={tableId}
+        total={currentTableBill.total}
+        onViewBill={() => setIsBillOpen(true)}
+      />
 
       <div className="container" style={{ paddingTop: 0 }}>
-        <CategoryTabs categories={categories} activeCategory={activeCategory} onSelect={setActiveCategory} />
+        <CategoryTabs categories={categoriesState} activeCategory={activeCategory} onSelect={setActiveCategory} />
         <MenuGrid items={filteredItems} onAdd={addToCart} />
       </div>
 
       <CartFloat count={cartCount} total={cartTotal} onClick={() => setIsCartOpen(true)} />
+
+      {/* NEW: Call Waiter Button */}
+      <CallWaiterButton tableId={tableId} socket={socket} />
 
       {isCartOpen && (
         <CartModal
@@ -391,8 +523,22 @@ function App() {
           total={cartTotal}
           tableId={tableId}
           onClose={() => setIsCartOpen(false)}
-          onPlaceOrder={placeOrder} // Now calls socket emit
+          onPlaceOrder={placeOrder}
           whatsappNumber={whatsappNumber}
+        />
+      )}
+
+      {/* NEW: Table Bill View */}
+      {isBillOpen && (
+        <TableBillView
+          bill={currentTableBill}
+          tableId={tableId}
+          onClose={() => setIsBillOpen(false)}
+          onCallWaiter={() => {
+            socket?.emit('call-waiter', { tableId, timestamp: Date.now() })
+            setNotification("Staff called for payment.")
+            setTimeout(() => setNotification(null), 3000)
+          }}
         />
       )}
 
@@ -402,7 +548,7 @@ function App() {
           top: '20px',
           left: '50%',
           transform: 'translateX(-50%)',
-          background: '#ffc107', // Amber/Gold
+          background: '#ffc107',
           color: '#000',
           padding: '16px 32px',
           borderRadius: 'var(--radius-md)',

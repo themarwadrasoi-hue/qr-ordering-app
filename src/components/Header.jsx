@@ -1,6 +1,6 @@
 import React from 'react'
 
-export default function Header({ tableId = '15' }) {
+export default function Header({ tableId = '15', total = 0, onViewBill }) {
     return (
         <header style={{
             position: 'sticky',
@@ -11,20 +11,43 @@ export default function Header({ tableId = '15' }) {
         }} className="glass">
             <div className="container" style={{ paddingBottom: 'var(--spacing-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                    <h2 style={{ fontSize: '1.5rem', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '1px' }}>THE MARWAD RASOI</h2>
+                    <h2 style={{ fontSize: '1.2rem', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>THE MARWAD RASOI</h2>
                 </div>
 
-                <div style={{
-                    background: 'rgba(255,255,255,0.05)',
-                    padding: '4px 12px',
-                    borderRadius: 'var(--radius-full)',
-                    border: '1px solid var(--border-subtle)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>Table</span>
-                    <span style={{ fontWeight: '700', color: 'var(--text-primary)' }}>{tableId || '--'}</span>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    {total > 0 && (
+                        <button
+                            onClick={onViewBill}
+                            style={{
+                                background: 'rgba(255, 193, 7, 0.15)',
+                                color: 'var(--primary)',
+                                border: '1px solid var(--primary)',
+                                padding: '6px 12px',
+                                borderRadius: 'var(--radius-md)',
+                                fontSize: '0.85rem',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease'
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 193, 7, 0.25)'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 193, 7, 0.15)'}
+                        >
+                            Bill: ₹{total.toFixed(0)}
+                        </button>
+                    )}
+
+                    <div style={{
+                        background: 'rgba(255,255,255,0.05)',
+                        padding: '4px 12px',
+                        borderRadius: 'var(--radius-full)',
+                        border: '1px solid var(--border-subtle)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                    }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>Table</span>
+                        <span style={{ fontWeight: '700', color: 'var(--text-primary)' }}>{tableId || '--'}</span>
+                    </div>
                 </div>
             </div>
         </header>

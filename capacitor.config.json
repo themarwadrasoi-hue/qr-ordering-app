@@ -3,7 +3,7 @@
   "appName": "THE MARWAD RASOI",
   "webDir": "dist",
   "server": {
-    "url": "https://2cee20f455cb06.lhr.life",
+    "url": "https://qr-ordering-app.onrender.com",
     "cleartext": true
   }
 }

@@ -25,21 +25,80 @@ app.use(cors());
 // In-Memory Database (replaces localStorage)
 let orders = [];
 let orderHistory = []; // Store completed orders
-let menu = []; // We can populate this initially if needed, or sync from first client
+let menu = [];
 let whatsappNumber = '919602755557';
+let categories = [
+    { id: 'all', name: 'All Items' },
+    { id: 'burgers', name: 'Burgers' },
+    { id: 'pizza', name: 'Pizza' },
+    { id: 'chinese', name: 'Chinese' },
+    { id: 'drinks', name: 'Drinks' },
+    { id: 'dessert', name: 'Desserts' }
+];
+
+// NEW: Table Bills and Waiter Calls
+let tableBills = {}; // { tableId: { orders: [], total: 0 } }
+let waiterCalls = []; // [{ tableId, timestamp }]
 
 io.on('connection', (socket) => {
     console.log('Client connected:', socket.id);
 
     // Send initial state to the connected client
-    socket.emit('sync-state', { orders, menu, whatsappNumber, orderHistory });
+    socket.emit('sync-state', {
+        orders,
+        menu,
+        categories,
+        whatsappNumber,
+        orderHistory,
+        tableBills,
+        waiterCalls
+    });
 
     // Handle New Order
     socket.on('place-order', (order) => {
         console.log('New Order:', order);
-        orders.unshift(order); // Add to top
-        io.emit('orders-updated', orders); // Broadcast to ALL clients (Admin & Customer)
-        io.emit('new-order', order); // Specific event for notifications
+        orders.unshift(order); // Add to active orders list (for kitchen display)
+
+        // Update Table Bill
+        const tId = order.tableId || 'Walk-in';
+        if (!tableBills[tId]) {
+            tableBills[tId] = { orders: [], total: 0 };
+        }
+        tableBills[tId].orders.push(order);
+        tableBills[tId].total += order.total;
+
+        io.emit('orders-updated', orders);
+        io.emit('new-order', order);
+        io.emit('table-bills-updated', tableBills); // Broadcast to all for sync
+    });
+
+    // Handle Waiter Call
+    socket.on('call-waiter', (data) => {
+        console.log(`Waiter call from Table ${data.tableId}`);
+        // Only add if not already in list to avoid duplicates
+        if (!waiterCalls.find(c => c.tableId === data.tableId)) {
+            waiterCalls.push(data);
+            io.emit('waiter-call-received', data);
+        }
+    });
+
+    // Handle Waiter Call Acknowledgment
+    socket.on('acknowledge-waiter-call', (tableId) => {
+        console.log(`Acknowledged call for Table ${tableId}`);
+        waiterCalls = waiterCalls.filter(c => c.tableId !== tableId);
+        io.emit('waiter-call-acknowledged', { tableId });
+        io.emit('waiter-calls-updated', waiterCalls);
+    });
+
+    // Handle Clear Table Bill
+    socket.on('clear-table-bill', (tableId) => {
+        console.log(`Clearing bill for Table ${tableId}`);
+        if (tableBills[tableId]) {
+            // Optional: You could archive this session here if needed
+            delete tableBills[tableId];
+            io.emit('table-bills-updated', tableBills);
+            io.emit('table-bill-cleared', { tableId });
+        }
     });
 
     // Handle Order Status Update (Admin)
@@ -66,6 +125,12 @@ io.on('connection', (socket) => {
         io.emit('menu-updated', menu);
     });
 
+    // Handle Categories Update (Admin)
+    socket.on('update-categories', (newCats) => {
+        categories = newCats;
+        io.emit('categories-updated', categories);
+    });
+
     // Handle Settings Updates (Admin)
     socket.on('update-settings', (settings) => {
         if (settings.whatsappNumber !== undefined) {
@@ -81,6 +146,11 @@ io.on('connection', (socket) => {
 
 // Catch-all handler to serve React App for any route (client-side routing)
 app.use((req, res) => {
+    // If the request for an asset fails, don't serve index.html (to avoid MIME type errors)
+    if (req.url.startsWith('/assets/') || req.url.includes('.')) {
+        return res.status(404).send('Not found');
+    }
+
     const indexPath = path.join(__dirname, 'dist', 'index.html');
     console.log(`[Request] ${req.method} ${req.url}`);
     console.log(`[Debug] Trying to serve: ${indexPath}`);
@@ -100,6 +170,7 @@ app.use((req, res) => {
     // Robust Fallback: Read file completely and send
     try {
         const html = fs.readFileSync(indexPath, 'utf8');
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
         res.send(html);
     } catch (err) {
         console.error("Error reading/sending file:", err);

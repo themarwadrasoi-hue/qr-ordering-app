@@ -61,6 +61,23 @@ export default function MenuItem({ item, onAdd }) {
                     {item.desc}
                 </p>
 
+                {item.subCategory && (
+                    <div style={{
+                        alignSelf: 'flex-start',
+                        fontSize: '0.7rem',
+                        background: 'rgba(255,255,255,0.1)',
+                        padding: '2px 8px',
+                        borderRadius: '10px',
+                        marginBottom: '10px',
+                        color: 'var(--primary)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px',
+                        fontWeight: 'bold'
+                    }}>
+                        {item.subCategory}
+                    </div>
+                )}
+
                 {hasVariants && item.isAvailable && (
                     <div style={{
                         display: 'flex',
