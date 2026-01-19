@@ -1,16 +1,24 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 export default function WaiterCallNotification({ call, onAcknowledge }) {
     const audioRef = useRef(null)
+    const [isAudioBlocked, setIsAudioBlocked] = useState(false)
+
+    const playSound = () => {
+        if (audioRef.current) {
+            audioRef.current.volume = 1.0;
+            audioRef.current.play()
+                .then(() => setIsAudioBlocked(false))
+                .catch(err => {
+                    console.log('Audio play blocked:', err)
+                    setIsAudioBlocked(true)
+                })
+        }
+    }
 
     useEffect(() => {
         if (call) {
-            // Play ringtone
-            if (audioRef.current) {
-                audioRef.current.play().catch(err => {
-                    console.log('Audio play failed:', err)
-                })
-            }
+            playSound();
 
             // Vibrate if supported
             if (navigator.vibrate) {
@@ -42,16 +50,38 @@ export default function WaiterCallNotification({ call, onAcknowledge }) {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            animation: 'fadeIn 0.3s ease'
+            animation: 'fadeIn 0.3s ease',
+            padding: '20px'
         }}>
             {/* Audio Element */}
-            <audio ref={audioRef} loop>
+            <audio ref={audioRef} loop autoPlay>
                 <source src="https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3" type="audio/mpeg" />
             </audio>
 
+            {isAudioBlocked && (
+                <div
+                    onClick={playSound}
+                    style={{
+                        position: 'absolute',
+                        top: '20px',
+                        background: '#ffc107',
+                        color: '#000',
+                        padding: '10px 20px',
+                        borderRadius: '10px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        boxShadow: '0 5px 15px rgba(0,0,0,0.3)',
+                        animation: 'pulse 1s infinite',
+                        zIndex: 11000
+                    }}
+                >
+                    ⚠️ Click here to enable sound
+                </div>
+            )}
+
             {/* Bell Icon Animation */}
             <div style={{
-                fontSize: '8rem',
+                fontSize: 'clamp(5rem, 15vw, 8rem)',
                 marginBottom: '30px',
                 animation: 'ringBell 0.8s infinite'
             }}>
@@ -60,9 +90,9 @@ export default function WaiterCallNotification({ call, onAcknowledge }) {
 
             {/* Table Number */}
             <h1 style={{
-                fontSize: '3rem',
+                fontSize: 'clamp(2rem, 8vw, 4rem)',
                 color: '#ffc107',
-                marginBottom: '20px',
+                marginBottom: '10px',
                 fontWeight: '900',
                 textAlign: 'center',
                 textShadow: '0 0 20px rgba(255, 193, 7, 0.5)'
@@ -71,9 +101,9 @@ export default function WaiterCallNotification({ call, onAcknowledge }) {
             </h1>
 
             <p style={{
-                fontSize: '1.5rem',
+                fontSize: 'clamp(1rem, 4vw, 1.5rem)',
                 color: '#fff',
-                marginBottom: '40px',
+                marginBottom: '20px',
                 textAlign: 'center'
             }}>
                 is calling for service
@@ -81,7 +111,7 @@ export default function WaiterCallNotification({ call, onAcknowledge }) {
 
             {/* Time */}
             <p style={{
-                fontSize: '1rem',
+                fontSize: '0.9rem',
                 color: 'rgba(255, 255, 255, 0.6)',
                 marginBottom: '40px'
             }}>
@@ -103,14 +133,6 @@ export default function WaiterCallNotification({ call, onAcknowledge }) {
                     boxShadow: '0 8px 30px rgba(76, 175, 80, 0.4)',
                     transition: 'all 0.3s ease',
                     animation: 'pulse 2s infinite'
-                }}
-                onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'scale(1.05)'
-                    e.currentTarget.style.boxShadow = '0 10px 40px rgba(76, 175, 80, 0.6)'
-                }}
-                onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'scale(1)'
-                    e.currentTarget.style.boxShadow = '0 8px 30px rgba(76, 175, 80, 0.4)'
                 }}
             >
                 ✓ Acknowledge
