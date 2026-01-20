@@ -309,37 +309,20 @@ io.on('connection', (socket) => {
 });
 
 // Catch-all handler to serve React App for any route (client-side routing)
-app.use((req, res) => {
-    // If the request for an asset fails, don't serve index.html (to avoid MIME type errors)
-    if (req.url.startsWith('/assets/') || req.url.includes('.')) {
+app.get('*', (req, res) => {
+    const indexPath = path.join(__dirname, 'dist', 'index.html');
+
+    // Don't serve index.html for likely asset requests or API
+    if (req.url.startsWith('/api') || req.url.startsWith('/assets')) {
         return res.status(404).send('Not found');
     }
 
-    const indexPath = path.join(__dirname, 'dist', 'index.html');
-    console.log(`[Request] ${req.method} ${req.url}`);
-    console.log(`[Debug] Trying to serve: ${indexPath}`);
-
     if (!fs.existsSync(indexPath)) {
         console.error(`[Error] File not found at: ${indexPath}`);
-        console.error(`[Error] Current directory: ${process.cwd()}`);
-        console.error(`[Error] __dirname: ${__dirname}`);
-        try {
-            console.error(`[Error] dist contents:`, fs.readdirSync(path.join(__dirname, 'dist')));
-        } catch (e) {
-            console.error(`[Error] Could not list dist: ${e.message}`);
-        }
-        return res.status(404).send(`Server Error: index.html not found at ${indexPath}. Please run 'npm run build'.`);
+        return res.status(404).send(`Server Error: Application not built. Run 'npm run build'.`);
     }
 
-    // Robust Fallback: Read file completely and send
-    try {
-        const html = fs.readFileSync(indexPath, 'utf8');
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-        res.send(html);
-    } catch (err) {
-        console.error("Error reading/sending file:", err);
-        res.status(500).send("Server Error: Could not load application.");
-    }
+    res.sendFile(indexPath);
 });
 
 const PORT = process.env.PORT || 3000;
