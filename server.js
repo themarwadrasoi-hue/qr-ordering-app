@@ -11,12 +11,16 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const httpServer = createServer(app);
+// Increase limit for image uploads
+app.use(express.json({ limit: '10mb' }));
 const io = new Server(httpServer, {
     cors: {
         origin: "*",
         methods: ["GET", "POST"]
     }
 });
+
+const DATA_FILE = path.join(__dirname, 'data.json');
 
 // Serve static files from the React build
 app.use(express.json());
@@ -57,6 +61,59 @@ let inventory = [
 
 // Expense Tracking
 let expenses = [];
+
+
+// --- DATA PERSISTENCE ---
+const loadData = () => {
+    try {
+        if (fs.existsSync(DATA_FILE)) {
+            const rawData = fs.readFileSync(DATA_FILE);
+            const data = JSON.parse(rawData);
+
+            if (data.orders) orders = data.orders;
+            if (data.orderHistory) orderHistory = data.orderHistory;
+            if (data.menu) menu = data.menu;
+            if (data.categories) categories = data.categories;
+            if (data.whatsappNumber) whatsappNumber = data.whatsappNumber;
+            if (data.tableBills) tableBills = data.tableBills;
+            if (data.restaurantLocation) restaurantLocation = data.restaurantLocation;
+            if (data.inventory) inventory = data.inventory;
+            if (data.expenses) expenses = data.expenses;
+
+            console.log('✅ Data loaded from disk');
+        }
+    } catch (err) {
+        console.error('❌ Error loading data:', err);
+    }
+};
+
+let saveTimeout = null;
+const saveData = () => {
+    if (saveTimeout) clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => {
+        try {
+            const data = {
+                orders,
+                orderHistory,
+                menu,
+                categories,
+                whatsappNumber,
+                tableBills,
+                restaurantLocation,
+                inventory,
+                expenses
+            };
+            fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+            console.log('💾 Data saved to disk');
+        } catch (err) {
+            console.error('❌ Error saving data:', err);
+        }
+    }, 1000); // Debounce save by 1 second
+};
+
+// Load data on startup
+loadData();
+
 
 // API Endpoints for OTP
 app.post('/api/send-otp', (req, res) => {
@@ -99,6 +156,7 @@ io.on('connection', (socket) => {
         console.log('Restaurant Location Updated:', loc);
         restaurantLocation = loc;
         io.emit('restaurant-location-updated', loc);
+        saveData();
     });
 
     // Handle Inventory Update
@@ -108,14 +166,30 @@ io.on('connection', (socket) => {
             item.id === updatedItem.id ? updatedItem : item
         );
         io.emit('inventory-updated', inventory);
+        saveData();
+    });
+
+    // Handle Expense Management
+    socket.on('add-expense', (expense) => {
+        console.log('Expense Added:', expense);
+        expenses.push(expense);
+        io.emit('expenses-updated', expenses);
+        saveData();
+    });
+
+    socket.on('delete-expense', (expenseId) => {
+        console.log('Expense Deleted:', expenseId);
+        expenses = expenses.filter(e => e.id !== expenseId);
+        io.emit('expenses-updated', expenses);
+        saveData();
     });
 
     // Handle New Order
     socket.on('place-order', (order) => {
         console.log('New Order:', order);
-        orders.unshift(order); // Add to active orders list (for kitchen display)
+        orders.push(order);
 
-        // Update Table Bill
+        // Add to Table Bill
         const tId = order.tableId || 'Walk-in';
         if (!tableBills[tId]) {
             tableBills[tId] = { orders: [], total: 0 };
@@ -123,9 +197,10 @@ io.on('connection', (socket) => {
         tableBills[tId].orders.push(order);
         tableBills[tId].total += order.total;
 
-        io.emit('orders-updated', orders);
         io.emit('new-order', order);
-        io.emit('table-bills-updated', tableBills); // Broadcast to all for sync
+        io.emit('orders-updated', orders);
+        io.emit('table-bills-updated', tableBills);
+        saveData();
     });
 
     // Handle Waiter Call
@@ -136,6 +211,7 @@ io.on('connection', (socket) => {
             waiterCalls.push(data);
             io.emit('waiter-call-received', data);
             io.emit('waiter-calls-updated', waiterCalls);
+            saveData();
         }
     });
 
@@ -145,41 +221,70 @@ io.on('connection', (socket) => {
         waiterCalls = waiterCalls.filter(c => c.tableId !== tableId);
         io.emit('waiter-call-acknowledged', { tableId });
         io.emit('waiter-calls-updated', waiterCalls);
+        saveData();
     });
 
     // Handle Clear Table Bill
     socket.on('clear-table-bill', (tableId) => {
         console.log(`Clearing bill for Table ${tableId}`);
         if (tableBills[tableId]) {
-            // Optional: You could archive this session here if needed
+            // Find orders for this table and mark them as paid/archived if needed
+            // For now, we just move them to history if not already there (which they should be if completed)
+            // But usually active orders are part of the bill.
+
+            // Move active orders to history if bill is cleared (assuming payment means completion)
+            const tableOrders = tableBills[tableId].orders;
+            const totalAmount = tableBills[tableId].total;
+
+            tableOrders.forEach(o => {
+                if (orders.find(ao => ao.id === o.id)) {
+                    orderHistory.push({ ...o, status: 'completed', completedAt: Date.now() });
+                }
+            });
+            orders = orders.filter(o => o.tableId !== tableId); // Remove active orders for this table
+
             delete tableBills[tableId];
             io.emit('table-bills-updated', tableBills);
-            io.emit('table-bill-cleared', { tableId });
+            io.emit('orders-updated', orders);
+            io.emit('history-updated', orderHistory);
+
+            // Notify the specific table that bill is cleared (Trigger Scratch Card)
+            io.emit('table-bill-cleared', { tableId, totalAmount });
+            saveData();
         }
     });
 
     // Handle Order Status Update (Admin)
     socket.on('update-order-status', ({ orderId, status }) => {
-        const existingOrder = orders.find(o => o.id === orderId);
+        console.log(`Order ${orderId} status updated to ${status}`);
 
-        if (status === 'completed' && existingOrder) {
-            const completedOrder = { ...existingOrder, status: 'completed', completedAt: Date.now() };
-            orderHistory.push(completedOrder);
-            orders = orders.filter(o => o.id !== orderId);
+        if (status === 'completed') {
+            const completedOrder = orders.find(o => o.id === orderId);
+            if (completedOrder) {
+                // Deduct Inventory
+                completedOrder.items.forEach(item => {
+                    // Logic to deduct items... simplified for now as mapping is complex
+                    // Ideally each menu item would have an 'ingredients' array
+                });
 
-            if (orderHistory.length > 500) orderHistory.shift();
-            io.emit('history-updated', orderHistory);
+                orderHistory.push({ ...completedOrder, status: 'completed', completedAt: Date.now() });
+                orders = orders.filter(o => o.id !== orderId);
+
+                io.emit('history-updated', orderHistory);
+            }
         } else {
             orders = orders.map(o => o.id === orderId ? { ...o, status } : o);
         }
 
         io.emit('orders-updated', orders);
+        saveData();
     });
 
     // Handle Menu Updates (Admin)
     socket.on('update-menu', (newMenu) => {
         menu = newMenu;
         io.emit('menu-updated', menu);
+        saveData();
     });
 
     // Handle Categories Update (Admin)

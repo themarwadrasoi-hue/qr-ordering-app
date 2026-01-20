@@ -14,6 +14,7 @@ import AdminReports from './components/AdminReports'
 import AdminTableBills from './components/AdminTableBills'
 import AdminInventory from './components/AdminInventory'
 import AdminExpenses from './components/AdminExpenses'
+import ScratchCard from './components/ScratchCard'
 
 import CallWaiterButton from './components/CallWaiterButton'
 import WaiterCallNotification from './components/WaiterCallNotification'
@@ -53,6 +54,8 @@ function App() {
   const [restaurantLocation, setRestaurantLocation] = useState(null) // { latitude, longitude }
   const [inventory, setInventory] = useState([])
   const [expenses, setExpenses] = useState([])
+  const [showScratchCard, setShowScratchCard] = useState(false)
+  const [scratchCardAmount, setScratchCardAmount] = useState(0)
 
   // Initialize Socket Connection
   useEffect(() => {
@@ -142,6 +145,13 @@ function App() {
       if (tableId === data.tableId) {
         setIsBillOpen(false)
         setNotification("Your bill has been cleared. Thank you!")
+
+        // Show Scratch Card if amount > 500
+        if (data.totalAmount > 500) {
+          setScratchCardAmount(data.totalAmount)
+          setShowScratchCard(true)
+        }
+
         setTimeout(() => setNotification(null), 5000)
       }
     })
@@ -679,6 +689,13 @@ function App() {
             setNotification("Service requested for payment.")
             setTimeout(() => setNotification(null), 3000)
           }}
+        />
+      )}
+
+      {!isAdmin && showScratchCard && (
+        <ScratchCard
+          amount={scratchCardAmount}
+          onClose={() => setShowScratchCard(false)}
         />
       )}
 
