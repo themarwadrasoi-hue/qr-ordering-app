@@ -44,7 +44,7 @@ let categories = [
 // NEW: Table Bills and Waiter Calls
 let tableBills = {}; // { tableId: { orders: [], total: 0 } }
 let waiterCalls = []; // [{ tableId, timestamp }]
-let restaurantLocation = null; // { latitude, longitude }
+let restaurantLocation = { latitude: 26.909948, longitude: 75.722024 }; // Fixed Location (The Marwar Rasoi)
 let currentOTP = null;
 let isStoreOpen = true; // Default to open
 
