@@ -38,6 +38,8 @@ let categories = [
 ];
 
 // NEW: Table Bills and Waiter Calls
+let tableBills = {}; // { tableId: { orders: [], total: 0 } }
+let waiterCalls = []; // [{ tableId, timestamp }]
 let restaurantLocation = null; // { latitude, longitude }
 let currentOTP = null;
 
