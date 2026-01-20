@@ -43,6 +43,21 @@ let waiterCalls = []; // [{ tableId, timestamp }]
 let restaurantLocation = null; // { latitude, longitude }
 let currentOTP = null;
 
+// Inventory Management
+let inventory = [
+    { id: 'potato', name: 'Potato', unit: 'kg', stock: 50, minStock: 10, usedToday: 0 },
+    { id: 'cheese', name: 'Cheese', unit: 'kg', stock: 20, minStock: 5, usedToday: 0 },
+    { id: 'bread', name: 'Bread Buns', unit: 'pcs', stock: 100, minStock: 20, usedToday: 0 },
+    { id: 'tomato', name: 'Tomato', unit: 'kg', stock: 30, minStock: 8, usedToday: 0 },
+    { id: 'onion', name: 'Onion', unit: 'kg', stock: 25, minStock: 7, usedToday: 0 },
+    { id: 'lettuce', name: 'Lettuce', unit: 'kg', stock: 15, minStock: 5, usedToday: 0 },
+    { id: 'chicken', name: 'Chicken', unit: 'kg', stock: 40, minStock: 10, usedToday: 0 },
+    { id: 'oil', name: 'Cooking Oil', unit: 'liters', stock: 25, minStock: 5, usedToday: 0 },
+];
+
+// Expense Tracking
+let expenses = [];
+
 // API Endpoints for OTP
 app.post('/api/send-otp', (req, res) => {
     const { phone } = req.body;
@@ -74,7 +89,9 @@ io.on('connection', (socket) => {
         orderHistory,
         tableBills,
         waiterCalls,
-        restaurantLocation
+        restaurantLocation,
+        inventory,
+        expenses
     });
 
     // Handle Restaurant Location Update
@@ -82,6 +99,15 @@ io.on('connection', (socket) => {
         console.log('Restaurant Location Updated:', loc);
         restaurantLocation = loc;
         io.emit('restaurant-location-updated', loc);
+    });
+
+    // Handle Inventory Update
+    socket.on('update-inventory', (updatedItem) => {
+        console.log('Inventory Updated:', updatedItem);
+        inventory = inventory.map(item =>
+            item.id === updatedItem.id ? updatedItem : item
+        );
+        io.emit('inventory-updated', inventory);
     });
 
     // Handle New Order

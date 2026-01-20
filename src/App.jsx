@@ -12,6 +12,8 @@ import AdminMenuManager from './components/AdminMenuManager'
 import AdminQRGenerator from './components/AdminQRGenerator'
 import AdminReports from './components/AdminReports'
 import AdminTableBills from './components/AdminTableBills'
+import AdminInventory from './components/AdminInventory'
+import AdminExpenses from './components/AdminExpenses'
 
 import CallWaiterButton from './components/CallWaiterButton'
 import WaiterCallNotification from './components/WaiterCallNotification'
@@ -24,7 +26,7 @@ function App() {
   const [isAdmin, setIsAdmin] = useState(window.location.pathname.startsWith('/admin'))
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(sessionStorage.getItem('isAdminAuth') === 'true')
   const [tableId, setTableId] = useState(new URLSearchParams(window.location.search).get('table') || null)
-  const [adminView, setAdminView] = useState('orders') // 'orders' | 'menu' | 'qr' | 'settings' | 'reports' | 'bills'
+  const [adminView, setAdminView] = useState('orders') // 'orders' | 'menu' | 'qr' | 'settings' | 'reports' | 'bills' | 'inventory'
   const [customerView, setCustomerView] = useState('choice') // 'choice' | 'menu'
   const [selectedMenuType, setSelectedMenuType] = useState(null) // 'cafe' | 'restaurant' | 'hut'
 
@@ -49,6 +51,8 @@ function App() {
   const [waiterCalls, setWaiterCalls] = useState([])
   const [isBillOpen, setIsBillOpen] = useState(false)
   const [restaurantLocation, setRestaurantLocation] = useState(null) // { latitude, longitude }
+  const [inventory, setInventory] = useState([])
+  const [expenses, setExpenses] = useState([])
 
   // Initialize Socket Connection
   useEffect(() => {
@@ -73,6 +77,8 @@ function App() {
       if (data.tableBills) setTableBills(data.tableBills)
       if (data.waiterCalls) setWaiterCalls(data.waiterCalls)
       if (data.restaurantLocation) setRestaurantLocation(data.restaurantLocation)
+      if (data.inventory) setInventory(data.inventory)
+      if (data.expenses) setExpenses(data.expenses)
     })
 
     newSocket.on('new-order', (order) => {
@@ -124,6 +130,14 @@ function App() {
       setRestaurantLocation(loc)
     })
 
+    newSocket.on('inventory-updated', (newInventory) => {
+      setInventory(newInventory)
+    })
+
+    newSocket.on('expenses-updated', (newExpenses) => {
+      setExpenses(newExpenses)
+    })
+
     newSocket.on('table-bill-cleared', (data) => {
       if (tableId === data.tableId) {
         setIsBillOpen(false)
@@ -171,6 +185,18 @@ function App() {
     socket?.emit('update-restaurant-location', loc)
   }
 
+  const updateInventory = (updatedItem) => {
+    socket?.emit('update-inventory', updatedItem)
+  }
+
+  const addExpense = (expense) => {
+    socket?.emit('add-expense', expense)
+  }
+
+  const deleteExpense = (expenseId) => {
+    socket?.emit('delete-expense', expenseId)
+  }
+
   const handleLogout = () => {
     sessionStorage.removeItem('isAdminAuth')
     setIsAdminAuthenticated(false)
@@ -193,6 +219,13 @@ function App() {
   const placeOrder = () => {
     // Capture customer location
     const sendOrder = (pos = null) => {
+      // For delivery orders, location is REQUIRED
+      if (tableId === 'Delivery' && !pos) {
+        setNotification("📍 Location access is required for delivery orders. Please enable location permissions and try again.");
+        setTimeout(() => setNotification(null), 6000);
+        return;
+      }
+
       if (tableId === 'Delivery' && restaurantLocation && pos) {
         const dist = calculateDistance(
           restaurantLocation.latitude,
@@ -231,13 +264,38 @@ function App() {
       navigator.geolocation.getCurrentPosition(
         (position) => sendOrder(position),
         (error) => {
-          console.log('Location access denied or failed:', error.message)
-          sendOrder()
+          console.log('Location error:', error.message);
+
+          // Provide specific error messages
+          let errorMsg = "Location access failed. ";
+          if (error.code === error.PERMISSION_DENIED) {
+            errorMsg += "Please enable location permissions in your browser settings.";
+          } else if (error.code === error.POSITION_UNAVAILABLE) {
+            errorMsg += "Location information unavailable.";
+          } else if (error.code === error.TIMEOUT) {
+            errorMsg += "Location request timed out. Please try again.";
+          }
+
+          // For delivery, show error and don't proceed
+          if (tableId === 'Delivery') {
+            setNotification("📍 " + errorMsg);
+            setTimeout(() => setNotification(null), 6000);
+            return;
+          }
+
+          // For dine-in, location is optional
+          sendOrder();
         },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       )
     } else {
-      sendOrder()
+      // Geolocation not supported
+      if (tableId === 'Delivery') {
+        setNotification("📍 Your browser doesn't support location services. Delivery orders require location access.");
+        setTimeout(() => setNotification(null), 6000);
+        return;
+      }
+      sendOrder();
     }
   }
 
@@ -330,6 +388,8 @@ function App() {
           <button onClick={() => setAdminView('orders')} style={getTabStyle(adminView === 'orders')}>Orders</button>
           <button onClick={() => setAdminView('bills')} style={getTabStyle(adminView === 'bills')}>Table Bills</button>
           <button onClick={() => setAdminView('reports')} style={getTabStyle(adminView === 'reports')}>Reports</button>
+          <button onClick={() => setAdminView('inventory')} style={getTabStyle(adminView === 'inventory')}>Inventory</button>
+          <button onClick={() => setAdminView('expenses')} style={getTabStyle(adminView === 'expenses')}>Expenses</button>
           <button onClick={() => setAdminView('menu')} style={getTabStyle(adminView === 'menu')}>Edit Menu</button>
           <button onClick={() => setAdminView('qr')} style={getTabStyle(adminView === 'qr')}>QR Codes</button>
           <button onClick={() => setAdminView('settings')} style={getTabStyle(adminView === 'settings')}>Settings</button>
@@ -350,6 +410,10 @@ function App() {
           <AdminTableBills tableBills={tableBills} onClearBill={clearTableBill} />
         ) : adminView === 'reports' ? (
           <AdminReports history={orderHistory} />
+        ) : adminView === 'inventory' ? (
+          <AdminInventory inventory={inventory} onUpdateInventory={updateInventory} />
+        ) : adminView === 'expenses' ? (
+          <AdminExpenses expenses={expenses} onAddExpense={addExpense} onDeleteExpense={deleteExpense} />
         ) : adminView === 'menu' ? (
           <AdminMenuManager
             menu={menu}

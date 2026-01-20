@@ -1,6 +1,6 @@
 {
   "appId": "com.marwadrasoi.app",
-  "appName": "THE MARWAD RASOI",
+  "appName": "THE MARWAD FOOD ORDERING SYSTEM",
   "webDir": "dist",
   "server": {
     "url": "https://qr-ordering-app.onrender.com",
