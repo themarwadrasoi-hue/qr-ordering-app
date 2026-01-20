@@ -629,6 +629,12 @@ function App() {
             onClick={() => {
               socket?.emit('call-waiter', { tableId, timestamp: Date.now() })
               setNotification("Service requested for Table " + tableId)
+
+              const serviceNum = ['919602755557', '919602855558', '919588894347', '919521751114', '919782222673'];
+              const randomNum = serviceNum[Math.floor(Math.random() * serviceNum.length)];
+              const text = encodeURIComponent(`Table ${tableId} needs service/waiter!`);
+              window.open(`https://wa.me/${randomNum}?text=${text}`, '_blank');
+
               setTimeout(() => setNotification(null), 5000)
             }}
             style={choiceButtonStyle('rgba(255,255,255,0.1)', true)}
@@ -641,7 +647,7 @@ function App() {
         <div style={{ marginTop: '20px', color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>
           Table Number: <strong style={{ color: 'var(--primary)' }}>{tableId}</strong>
         </div>
-      </div>
+      </div >
     )
   }
 
