@@ -309,12 +309,13 @@ io.on('connection', (socket) => {
 });
 
 // Catch-all handler to serve React App for any route (client-side routing)
-app.get('*', (req, res) => {
+app.use((req, res, next) => {
+    if (req.method !== 'GET') return next();
     const indexPath = path.join(__dirname, 'dist', 'index.html');
 
     // Don't serve index.html for likely asset requests or API
     if (req.url.startsWith('/api') || req.url.startsWith('/assets')) {
-        return res.status(404).send('Not found');
+        return next();
     }
 
     if (!fs.existsSync(indexPath)) {
