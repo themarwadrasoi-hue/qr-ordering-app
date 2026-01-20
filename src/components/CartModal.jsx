@@ -7,34 +7,13 @@ export default function CartModal({ cart, total, onClose, onPlaceOrder, tableId,
     const handleCheckout = () => {
         setLoading(true)
 
-        if (whatsappNumber) {
-            // WhatsApp Logic
-            // Sanitize number: remove any non-digit characters (e.g. +, -, spaces)
-            const cleanNumber = whatsappNumber.replace(/\D/g, '')
-
-            let text = `*New Order - THE MARWAD RASOI (Table ${tableId})*\n\n`
-            cart.forEach(item => {
-                text += `${item.qty}x ${item.title} ${item.variant ? `(${item.variant})` : ''}\n`
-            })
-            text += `\n*Total: ₹${total}*`
-
-            // Use api.whatsapp.com for better cross-platform compatibility
-            const url = `https://api.whatsapp.com/send?phone=${cleanNumber}&text=${encodeURIComponent(text)}`
-            window.open(url, '_blank')
-
-            onPlaceOrder() // Clear cart locally
+        // Digital Ordering Logic (via Socket.io in App.jsx)
+        setTimeout(() => {
+            onPlaceOrder()
             setLoading(false)
             setSuccess(true)
-            setTimeout(onClose, 5000)
-        } else {
-            // Local Simulation Logic
-            setTimeout(() => {
-                onPlaceOrder()
-                setLoading(false)
-                setSuccess(true)
-                setTimeout(onClose, 3000)
-            }, 1500)
-        }
+            setTimeout(onClose, 3000)
+        }, 1200) // Slight delay for premium feel
     }
 
     if (success) {

@@ -7,14 +7,23 @@ description: How to deploy the QR Ordering App to Render and Android
 Follow these steps to deploy your changes to the live website and the Android app.
 
 ## 1. Deploy to Website (Render)
-If your project is connected to GitHub and Render, simply push your changes:
+Render connects to your GitHub repository. To deploy:
 
-```powershell
-git add .
-git commit -m "Add menu selection and service please feature"
-git push origin main
-```
-*Render will automatically start building the new version.*
+1. **Push Changes**:
+   ```powershell
+   git add .
+   git commit -m "Update features: menu selection and service please"
+   git push origin main
+   ```
+
+2. **Check Render Dashboard**:
+   - Go to [dashboard.render.com](https://dashboard.render.com)
+   - Select your service: **marwad-rasoi-qr-ordering**
+   - Click **Events** to see if the build has started.
+   - If it doesn't start automatically, click **Manual Deploy** -> **Deploy latest commit**.
+
+3. **Verify**:
+   - Once the status is **Live**, visit your URL to see the new choice screen.
 
 ## 2. Update Android App (Capacitor)
 To update the mobile app with the new menu screen:

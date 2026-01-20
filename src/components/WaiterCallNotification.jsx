@@ -83,7 +83,7 @@ export default function WaiterCallNotification({ calls, onAcknowledge }) {
                     display: 'inline-block'
                 }}>🔔</div>
                 <h1 style={{ color: '#ffc107', fontSize: '2.5rem', fontWeight: '900', margin: '10px 0' }}>
-                    WAITER SERVICE CALLS
+                    SERVICE REQUEST ALERT
                 </h1>
             </div>
 

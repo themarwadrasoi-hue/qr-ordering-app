@@ -305,7 +305,7 @@ function App() {
           </div>
         )}
 
-        {/* Admin Notifications */}
+        {/* Global Admin Alerts */}
         <WaiterCallNotification
           calls={waiterCalls}
           onAcknowledge={acknowledgeWaiterCall}
@@ -353,7 +353,11 @@ function App() {
         <div style={{ marginTop: '40px' }}>
           <p style={{ color: 'var(--text-muted)', marginBottom: '20px' }}>Your food is being prepared.</p>
           <button
-            onClick={() => setOrderPlaced(false)}
+            onClick={() => {
+              setOrderPlaced(false)
+              setCustomerView('choice')
+              setSelectedMenuType(null)
+            }}
             className="btn btn-primary"
           >
             Order More Items
@@ -490,6 +494,10 @@ function App() {
         tableId={tableId}
         total={currentTableBill.total}
         onViewBill={() => setIsBillOpen(true)}
+        onSwitchMenu={() => {
+          setCustomerView('choice')
+          setSelectedMenuType(null)
+        }}
       />
 
       <div className="container" style={{ paddingTop: 0 }}>
@@ -499,7 +507,7 @@ function App() {
 
       <CartFloat count={cartCount} total={cartTotal} onClick={() => setIsCartOpen(true)} />
 
-      {/* NEW: Call Waiter Button */}
+      {/* Service Button */}
       <CallWaiterButton tableId={tableId} socket={socket} />
 
       {isCartOpen && (
@@ -513,7 +521,7 @@ function App() {
         />
       )}
 
-      {/* NEW: Table Bill View */}
+      {/* Table Bill View */}
       {isBillOpen && (
         <TableBillView
           bill={currentTableBill}
@@ -521,7 +529,7 @@ function App() {
           onClose={() => setIsBillOpen(false)}
           onCallWaiter={() => {
             socket?.emit('call-waiter', { tableId, timestamp: Date.now() })
-            setNotification("Staff called for payment.")
+            setNotification("Service requested for payment.")
             setTimeout(() => setNotification(null), 3000)
           }}
         />

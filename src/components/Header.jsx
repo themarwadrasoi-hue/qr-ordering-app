@@ -1,6 +1,6 @@
 import React from 'react'
 
-export default function Header({ tableId = '15', total = 0, onViewBill }) {
+export default function Header({ tableId = '15', total = 0, onViewBill, onSwitchMenu }) {
     return (
         <header style={{
             position: 'sticky',
@@ -11,7 +11,7 @@ export default function Header({ tableId = '15', total = 0, onViewBill }) {
         }} className="glass">
             <div className="container" style={{ paddingBottom: 'var(--spacing-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                    <h2 style={{ fontSize: '1.2rem', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>THE MARWAD RASOI</h2>
+                    <h2 onClick={onSwitchMenu} style={{ fontSize: '1.2rem', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '1px', margin: 0, cursor: 'pointer' }}>THE MARWAD RASOI</h2>
                 </div>
 
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -35,6 +35,22 @@ export default function Header({ tableId = '15', total = 0, onViewBill }) {
                             Bill: ₹{total.toFixed(0)}
                         </button>
                     )}
+
+                    <button
+                        onClick={onSwitchMenu}
+                        style={{
+                            background: 'rgba(255,255,255,0.05)',
+                            padding: '6px 10px',
+                            borderRadius: 'var(--radius-md)',
+                            border: '1px solid var(--border-subtle)',
+                            color: 'var(--text-secondary)',
+                            fontSize: '0.75rem',
+                            fontWeight: 'bold',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        🔄 Switch
+                    </button>
 
                     <div style={{
                         background: 'rgba(255,255,255,0.05)',
