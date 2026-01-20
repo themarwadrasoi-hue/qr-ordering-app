@@ -12,7 +12,9 @@ export default function AdminOrderCard({ order, onComplete }) {
             marginBottom: 'var(--spacing-md)'
         }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--spacing-sm)' }}>
-                <h3 style={{ color: 'var(--primary)' }}>Table {order.tableId}</h3>
+                <h3 style={{ color: order.tableId === 'Delivery' ? 'var(--accent)' : 'var(--primary)' }}>
+                    {order.tableId === 'Delivery' ? '🚀 DELIVERY ORDER' : `Table ${order.tableId}`}
+                </h3>
                 <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{timeStr}</span>
             </div>
 
@@ -32,19 +34,25 @@ export default function AdminOrderCard({ order, onComplete }) {
                         Lat: {order.location.latitude.toFixed(6)}, Lng: {order.location.longitude.toFixed(6)}
                     </div>
                     <a
-                        href={`https://www.google.com/maps?q=${order.location.latitude},${order.location.longitude}`}
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${order.location.latitude},${order.location.longitude}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{
-                            color: 'var(--primary)',
+                            background: 'var(--accent)',
+                            color: '#fff',
                             textDecoration: 'none',
-                            fontSize: '0.8rem',
-                            display: 'inline-flex',
+                            fontSize: '0.85rem',
+                            display: 'flex',
                             alignItems: 'center',
-                            gap: '4px'
+                            justifyContent: 'center',
+                            gap: '8px',
+                            padding: '10px',
+                            borderRadius: '8px',
+                            fontWeight: 'bold',
+                            marginTop: '8px'
                         }}
                     >
-                        🗺️ Open in Google Maps →
+                        🗺️ Get Directions on Google Maps →
                     </a>
                 </div>
             )}

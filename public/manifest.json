@@ -1,7 +1,7 @@
 {
-  "description": "Premium Digital Menu and QR Ordering System for THE MARWAD RASOI. Order food directly from your table.",
-  "name": "THE MARWAD RASOI",
-  "short_name": "Marwad Rasoi",
+  "description": "Premium Digital Menu and QR Ordering System for THE MARWAD FOOD ORDERING SYSTEM. Order food directly from your table.",
+  "name": "THE MARWAD FOOD ORDERING SYSTEM",
+  "short_name": "Marwad Food",
   "id": "/?source=pwa",
   "start_url": "/?source=pwa",
   "scope": "/",

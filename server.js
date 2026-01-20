@@ -19,6 +19,7 @@ const io = new Server(httpServer, {
 });
 
 // Serve static files from the React build
+app.use(express.json());
 app.use(express.static(path.join(__dirname, 'dist')));
 app.use(cors());
 
@@ -37,8 +38,27 @@ let categories = [
 ];
 
 // NEW: Table Bills and Waiter Calls
-let tableBills = {}; // { tableId: { orders: [], total: 0 } }
-let waiterCalls = []; // [{ tableId, timestamp }]
+let restaurantLocation = null; // { latitude, longitude }
+let currentOTP = null;
+
+// API Endpoints for OTP
+app.post('/api/send-otp', (req, res) => {
+    const { phone } = req.body;
+    console.log(`Sending OTP to ${phone}...`);
+    // User requested fixed code 130289
+    currentOTP = "130289";
+    console.log(`[AUTH] OTP for ${phone} is: ${currentOTP}`);
+    res.json({ success: true, message: 'OTP sent successfully (Check server console)' });
+});
+
+app.post('/api/verify-otp', (req, res) => {
+    const { otp } = req.body;
+    if (otp === currentOTP) {
+        res.json({ success: true, token: 'admin-session-' + Date.now() });
+    } else {
+        res.status(401).json({ success: false, message: 'Invalid OTP' });
+    }
+});
 
 io.on('connection', (socket) => {
     console.log('Client connected:', socket.id);
@@ -51,7 +71,15 @@ io.on('connection', (socket) => {
         whatsappNumber,
         orderHistory,
         tableBills,
-        waiterCalls
+        waiterCalls,
+        restaurantLocation
+    });
+
+    // Handle Restaurant Location Update
+    socket.on('update-restaurant-location', (loc) => {
+        console.log('Restaurant Location Updated:', loc);
+        restaurantLocation = loc;
+        io.emit('restaurant-location-updated', loc);
     });
 
     // Handle New Order

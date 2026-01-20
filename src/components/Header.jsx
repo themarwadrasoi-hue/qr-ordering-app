@@ -11,7 +11,7 @@ export default function Header({ tableId = '15', total = 0, onViewBill, onSwitch
         }} className="glass">
             <div className="container" style={{ paddingBottom: 'var(--spacing-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                    <h2 onClick={onSwitchMenu} style={{ fontSize: '1.2rem', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '1px', margin: 0, cursor: 'pointer' }}>THE MARWAD RASOI</h2>
+                    <h2 onClick={onSwitchMenu} style={{ fontSize: '1rem', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '1px', margin: 0, cursor: 'pointer' }}>THE MARWAD FOOD ORDERING SYSTEM</h2>
                 </div>
 
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -61,8 +61,12 @@ export default function Header({ tableId = '15', total = 0, onViewBill, onSwitch
                         alignItems: 'center',
                         gap: '6px'
                     }}>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>Table</span>
-                        <span style={{ fontWeight: '700', color: 'var(--text-primary)' }}>{tableId || '--'}</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                            {tableId === 'Delivery' ? 'Mode' : 'Table'}
+                        </span>
+                        <span style={{ fontWeight: '700', color: tableId === 'Delivery' ? 'var(--primary)' : 'var(--text-primary)' }}>
+                            {tableId === 'Delivery' ? 'DELIVERY' : (tableId || '--')}
+                        </span>
                     </div>
                 </div>
             </div>

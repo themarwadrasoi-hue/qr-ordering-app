@@ -47,7 +47,7 @@ export default function AdminReports({ history }) {
                             {[...history].reverse().map(order => (
                                 <tr key={order.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                     <td style={tdStyle}>{new Date(order.completedAt || order.timestamp).toLocaleTimeString()}</td>
-                                    <td style={tdStyle}>{order.tableId}</td>
+                                    <td style={tdStyle}>{order.tableId === 'Delivery' ? '🚀 DELIVERY' : order.tableId}</td>
                                     <td style={tdStyle}>
                                         {order.items.map(i => (
                                             <div key={i.id}>{i.qty}x {i.title} {i.variant ? `(${i.variant})` : ''}</div>

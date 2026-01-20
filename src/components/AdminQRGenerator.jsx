@@ -1,7 +1,7 @@
 import React from 'react'
 import QRCode from 'react-qr-code'
 
-export default function AdminQRGenerator() {
+export default function AdminQRGenerator({ restaurantLocation, onUpdateRestaurantLocation }) {
     const tables = Array.from({ length: 20 }, (_, i) => i + 1)
     const [baseUrl, setBaseUrl] = React.useState(window.location.origin)
 
@@ -29,6 +29,42 @@ export default function AdminQRGenerator() {
                 flexDirection: 'column',
                 gap: '12px'
             }}>
+                <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                    <div style={{ flex: 1, minWidth: '200px' }}>
+                        <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '4px' }}>
+                            📍 Restaurant Center Point
+                        </div>
+                        <div style={{ color: restaurantLocation ? '#4CAF50' : '#FF9800', fontWeight: 'bold' }}>
+                            {restaurantLocation
+                                ? `${restaurantLocation.latitude.toFixed(6)}, ${restaurantLocation.longitude.toFixed(6)}`
+                                : 'Not Set (1KM limit disabled)'}
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => {
+                            if (navigator.geolocation) {
+                                navigator.geolocation.getCurrentPosition(
+                                    (pos) => onUpdateRestaurantLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+                                    (err) => alert("Could not get location: " + err.message)
+                                )
+                            }
+                        }}
+                        style={{
+                            background: 'var(--accent)',
+                            color: '#fff',
+                            border: 'none',
+                            padding: '8px 16px',
+                            borderRadius: 'var(--radius-sm)',
+                            cursor: 'pointer',
+                            fontSize: '0.9rem'
+                        }}
+                    >
+                        Set Current Location as Restaurant Center
+                    </button>
+                </div>
+
+                <div style={{ width: '100%', borderTop: '1px solid var(--border-subtle)', margin: '10px 0' }}></div>
+
                 <div style={{ width: '100%', marginBottom: '10px' }}>
                     <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '5px', fontSize: '0.9rem' }}>
                         Base URL (Scan Link Destination)
@@ -86,6 +122,45 @@ export default function AdminQRGenerator() {
                 gap: '40px',
                 justifyItems: 'center'
             }}>
+                {/* DELIVERY QR CARD */}
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '20px',
+                    background: '#fff',
+                    borderRadius: '12px',
+                    color: '#000',
+                    border: '4px solid var(--accent)',
+                    position: 'relative',
+                    overflow: 'hidden'
+                }}>
+                    <div style={{
+                        position: 'absolute',
+                        top: '10px',
+                        left: '-25px',
+                        background: 'var(--accent)',
+                        color: 'white',
+                        padding: '5px 30px',
+                        transform: 'rotate(-45deg)',
+                        fontSize: '0.7rem',
+                        fontWeight: 'bold'
+                    }}>DELIVERY</div>
+                    <QRCode
+                        value={`${baseUrl}/?table=Delivery`}
+                        size={180}
+                        fgColor="#000000"
+                        bgColor="#ffffff"
+                    />
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontWeight: 'bold', fontSize: '1.2rem', fontFamily: 'var(--font-display)', color: 'var(--accent)' }}>DELIVERY QR</div>
+                        <div style={{ fontSize: '0.6rem', color: '#666', marginTop: '4px', maxWidth: '180px', wordBreak: 'break-all' }}>
+                            {baseUrl}/?table=Delivery
+                        </div>
+                    </div>
+                </div>
+
                 {tables.map(id => {
                     const targetUrl = `${baseUrl}/?table=${id}`
                     return (

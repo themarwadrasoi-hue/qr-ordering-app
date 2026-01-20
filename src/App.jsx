@@ -22,6 +22,7 @@ import { io } from 'socket.io-client'
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(window.location.pathname.startsWith('/admin'))
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(sessionStorage.getItem('isAdminAuth') === 'true')
   const [tableId, setTableId] = useState(new URLSearchParams(window.location.search).get('table') || null)
   const [adminView, setAdminView] = useState('orders') // 'orders' | 'menu' | 'qr' | 'settings' | 'reports' | 'bills'
   const [customerView, setCustomerView] = useState('choice') // 'choice' | 'menu'
@@ -47,6 +48,7 @@ function App() {
   const [tableBills, setTableBills] = useState({})
   const [waiterCalls, setWaiterCalls] = useState([])
   const [isBillOpen, setIsBillOpen] = useState(false)
+  const [restaurantLocation, setRestaurantLocation] = useState(null) // { latitude, longitude }
 
   // Initialize Socket Connection
   useEffect(() => {
@@ -70,6 +72,7 @@ function App() {
       if (data.orderHistory) setOrderHistory(data.orderHistory)
       if (data.tableBills) setTableBills(data.tableBills)
       if (data.waiterCalls) setWaiterCalls(data.waiterCalls)
+      if (data.restaurantLocation) setRestaurantLocation(data.restaurantLocation)
     })
 
     newSocket.on('new-order', (order) => {
@@ -117,6 +120,10 @@ function App() {
       setWaiterCalls(calls)
     })
 
+    newSocket.on('restaurant-location-updated', (loc) => {
+      setRestaurantLocation(loc)
+    })
+
     newSocket.on('table-bill-cleared', (data) => {
       if (tableId === data.tableId) {
         setIsBillOpen(false)
@@ -159,9 +166,48 @@ function App() {
     socket?.emit('clear-table-bill', tId)
   }
 
+  const updateRestaurantLocation = (loc) => {
+    setRestaurantLocation(loc)
+    socket?.emit('update-restaurant-location', loc)
+  }
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('isAdminAuth')
+    setIsAdminAuthenticated(false)
+  }
+
+  // Haversine Distance Helper
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Radius of the earth in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const d = R * c; // Distance in km
+    return d;
+  }
+
   const placeOrder = () => {
     // Capture customer location
     const sendOrder = (pos = null) => {
+      if (tableId === 'Delivery' && restaurantLocation && pos) {
+        const dist = calculateDistance(
+          restaurantLocation.latitude,
+          restaurantLocation.longitude,
+          pos.coords.latitude,
+          pos.coords.longitude
+        );
+
+        if (dist > 1) {
+          setNotification("Sorry, we can't deliver above 1KM distance");
+          setTimeout(() => setNotification(null), 5000);
+          return;
+        }
+      }
+
       const newOrder = {
         id: Date.now().toString(),
         tableId,
@@ -204,7 +250,10 @@ function App() {
 
   // Derived
   const filteredItems = menu.filter(i => {
-    const matchesType = !selectedMenuType || i.menuType === selectedMenuType
+    const matchesType = !selectedMenuType ||
+      (Array.isArray(i.menuType)
+        ? i.menuType.includes(selectedMenuType)
+        : i.menuType === selectedMenuType)
     const matchesCategory = activeCategory === 'all' || i.category === activeCategory
     return matchesType && matchesCategory
   })
@@ -231,24 +280,46 @@ function App() {
 
   // Admin View
   if (isAdmin) {
+    if (!isAdminAuthenticated) {
+      return <AdminLogin onLogin={() => {
+        sessionStorage.setItem('isAdminAuth', 'true')
+        setIsAdminAuthenticated(true)
+      }} />
+    }
     return (
       <div className="container" style={{ paddingBottom: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-md)' }}>
           <h1 className="no-print" style={{ color: 'var(--primary)', margin: 0 }}>Kitchen Display (Live)</h1>
-          <button
-            onClick={copyMenuLink}
-            style={{
-              background: 'var(--primary)',
-              color: '#000',
-              border: 'none',
-              padding: '8px 15px',
-              borderRadius: '8px',
-              fontWeight: 'bold',
-              cursor: 'pointer'
-            }}
-          >
-            📋 Copy Menu Link
-          </button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={handleLogout}
+              style={{
+                background: 'rgba(239, 71, 111, 0.15)',
+                color: 'var(--danger)',
+                border: '1px solid var(--danger)',
+                padding: '8px 15px',
+                borderRadius: '8px',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              🚪 Logout
+            </button>
+            <button
+              onClick={copyMenuLink}
+              style={{
+                background: 'var(--primary)',
+                color: '#000',
+                border: 'none',
+                padding: '8px 15px',
+                borderRadius: '8px',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              📋 Copy Link
+            </button>
+          </div>
         </div>
 
         <div style={{ marginBottom: '10px', color: socket ? '#4caf50' : '#f44336', fontSize: '0.8rem' }}>
@@ -287,7 +358,10 @@ function App() {
             onUpdateCategories={updateCategories}
           />
         ) : adminView === 'qr' ? (
-          <AdminQRGenerator />
+          <AdminQRGenerator
+            restaurantLocation={restaurantLocation}
+            onUpdateRestaurantLocation={updateRestaurantLocation}
+          />
         ) : (
           <div style={{ padding: 'var(--spacing-md)', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-md)' }}>
             <h2 style={{ marginBottom: 'var(--spacing-md)' }}>Settings</h2>
@@ -348,7 +422,7 @@ function App() {
           lineHeight: '1.6'
         }}>
           Thank You from<br />
-          <strong style={{ color: 'var(--text-main)', fontSize: '1.4rem' }}>THE MARWAD RASOI</strong>
+          <strong style={{ color: 'var(--text-main)', fontSize: '1.4rem' }}>THE MARWAD FOOD ORDERING SYSTEM</strong>
         </p>
         <div style={{ marginTop: '40px' }}>
           <p style={{ color: 'var(--text-muted)', marginBottom: '20px' }}>Your food is being prepared.</p>
@@ -380,7 +454,7 @@ function App() {
         textAlign: 'center',
         background: 'linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url(https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1000&q=80) center/cover'
       }}>
-        <h1 style={{ fontSize: '3rem', color: 'var(--primary)', marginBottom: '0.5rem' }}>THE MARWAD RASOI</h1>
+        <h1 style={{ fontSize: '3rem', color: 'var(--primary)', marginBottom: '0.5rem' }}>THE MARWAD FOOD ORDERING SYSTEM</h1>
         <p style={{ color: '#fff', marginBottom: '2rem', fontSize: '1.2rem' }}>Veg & Non Veg • Cafe & Family Restaurant</p>
 
         <div className="glass-panel" style={{ padding: '30px', maxWidth: '400px', width: '100%' }}>
@@ -430,8 +504,17 @@ function App() {
         textAlign: 'center',
         background: 'linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), url(https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1000&q=80) center/cover'
       }}>
-        <h1 style={{ fontSize: '2.5rem', color: 'var(--primary)', marginBottom: '1rem' }}>WELCOME TO</h1>
-        <h2 style={{ fontSize: '3rem', color: '#fff', marginBottom: '2.5rem', fontWeight: '900' }}>THE MARWAD RASOI</h2>
+        <h1 style={{ fontSize: '2.5rem', color: 'var(--primary)', marginBottom: '1rem' }}>
+          {tableId === 'Delivery' ? '🏡 HOME DELIVERY' : 'WELCOME TO'}
+        </h1>
+        <h2 style={{ fontSize: tableId === 'Delivery' ? '2rem' : '3rem', color: '#fff', marginBottom: '2.5rem', fontWeight: '900' }}>
+          THE MARWAD FOOD ORDERING SYSTEM
+        </h2>
+        {tableId === 'Delivery' && (
+          <p style={{ color: 'var(--primary)', marginBottom: '20px', fontWeight: 'bold' }}>
+            📍 Orders delivered within 1KM radius only
+          </p>
+        )}
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', width: '100%', maxWidth: '500px' }}>
           <button
@@ -598,5 +681,126 @@ const choiceButtonStyle = (bg, isSecondary = false) => ({
   boxShadow: isSecondary ? 'none' : '0 10px 20px rgba(0,0,0,0.3)',
   transition: 'all 0.2s'
 })
+
+function AdminLogin({ onLogin }) {
+  const [phone, setPhone] = useState('')
+  const [otp, setOtp] = useState('')
+  const [step, setStep] = useState(1) // 1: Phone, 2: OTP
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSendOTP = async () => {
+    if (!phone) return setError('Please enter phone number')
+    setLoading(true)
+    setError('')
+    try {
+      await fetch('/api/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone })
+      })
+      setStep(2)
+    } catch (err) {
+      setError('Failed to send OTP')
+    }
+    setLoading(false)
+  }
+
+  const handleVerifyOTP = async () => {
+    if (!otp) return setError('Please enter OTP')
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch('/api/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ otp })
+      })
+      if (res.ok) {
+        onLogin()
+      } else {
+        setError('Invalid OTP')
+      }
+    } catch (err) {
+      setError('Verification failed')
+    }
+    setLoading(false)
+  }
+
+  return (
+    <div style={{
+      height: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px',
+      background: 'var(--background)'
+    }}>
+      <div className="glass-panel" style={{ padding: '40px', maxWidth: '400px', width: '100%', textAlign: 'center' }}>
+        <h2 style={{ color: 'var(--primary)', marginBottom: '10px' }}>Admin Login</h2>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '30px', fontSize: '0.9rem' }}>
+          Please verify your identity to continue to the Kitchen Display.
+        </p>
+
+        {error && (
+          <div style={{
+            background: 'rgba(239, 71, 111, 0.1)',
+            color: 'var(--danger)',
+            padding: '10px',
+            borderRadius: '8px',
+            marginBottom: '20px',
+            fontSize: '0.85rem'
+          }}>
+            ⚠️ {error}
+          </div>
+        )}
+
+        {step === 1 ? (
+          <>
+            <input
+              type="text"
+              placeholder="Enter Phone Number"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              style={{ ...inputStyle, marginBottom: '20px', textAlign: 'center', fontSize: '1.1rem' }}
+            />
+            <button
+              onClick={handleSendOTP}
+              disabled={loading}
+              className="btn btn-primary"
+              style={{ width: '100%' }}
+            >
+              {loading ? 'Sending...' : 'Send OTP'}
+            </button>
+          </>
+        ) : (
+          <>
+            <p style={{ marginBottom: '15px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+              OTP sent to {phone}. <span onClick={() => setStep(1)} style={{ color: 'var(--primary)', cursor: 'pointer', textDecoration: 'underline' }}>Change?</span>
+            </p>
+            <input
+              type="text"
+              placeholder="Enter 6-Digit OTP"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+              style={{ ...inputStyle, marginBottom: '20px', textAlign: 'center', fontSize: '1.2rem', letterSpacing: '4px' }}
+            />
+            <button
+              onClick={handleVerifyOTP}
+              disabled={loading}
+              className="btn btn-primary"
+              style={{ width: '100%' }}
+            >
+              {loading ? 'Verifying...' : 'Login to Dashboard'}
+            </button>
+            <p style={{ marginTop: '20px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              (Note: For testing, use code: 130289)
+            </p>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
 
 export default App

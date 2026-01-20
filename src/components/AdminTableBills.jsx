@@ -76,8 +76,8 @@ export default function AdminTableBills({ tableBills, onClearBill }) {
                                 alignItems: 'center',
                                 marginBottom: '10px'
                             }}>
-                                <h3 style={{ color: 'var(--primary)', fontSize: '1.5rem', margin: 0 }}>
-                                    Table {tableId}
+                                <h3 style={{ color: tableId === 'Delivery' ? 'var(--accent)' : 'var(--primary)', fontSize: '1.5rem', margin: 0 }}>
+                                    {tableId === 'Delivery' ? '🚀 DELIVERY' : `Table ${tableId}`}
                                 </h3>
                                 <span style={{
                                     background: 'rgba(255, 193, 7, 0.2)',
@@ -151,8 +151,8 @@ export default function AdminTableBills({ tableBills, onClearBill }) {
                     borderRadius: 'var(--radius-md)',
                     border: '1px solid var(--primary)'
                 }}>
-                    <h3 style={{ marginBottom: '15px', color: 'var(--primary)' }}>
-                        Table {selectedTable} - Detailed Bill
+                    <h3 style={{ marginBottom: '15px', color: selectedTable === 'Delivery' ? 'var(--accent)' : 'var(--primary)' }}>
+                        {selectedTable === 'Delivery' ? '🚀 DELIVERY ORDER' : `Table ${selectedTable}`} - Detailed Bill
                     </h3>
 
                     {tableBills[selectedTable].orders.map((order, idx) => (
