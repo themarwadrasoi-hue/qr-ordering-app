@@ -317,7 +317,8 @@ function App() {
   }
 
   // Derived
-  const filteredItems = menu.filter(i => {
+  const filteredItems = (Array.isArray(menu) ? menu : []).filter(i => {
+    if (!i) return false;
     const matchesType = !selectedMenuType ||
       (Array.isArray(i.menuType)
         ? i.menuType.includes(selectedMenuType)

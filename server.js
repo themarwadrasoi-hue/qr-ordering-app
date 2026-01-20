@@ -103,10 +103,12 @@ const saveData = () => {
                 inventory,
                 expenses
             };
-            fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-            console.log('💾 Data saved to disk');
+            fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), (err) => {
+                if (err) console.error('❌ Error saving data:', err);
+                else console.log('💾 Data saved to disk');
+            });
         } catch (err) {
-            console.error('❌ Error saving data:', err);
+            console.error('❌ Error preparing data for save:', err);
         }
     }, 1000); // Debounce save by 1 second
 };
