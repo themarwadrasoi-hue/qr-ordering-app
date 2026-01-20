@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 
-export default function CallWaiterButton({ tableId, socket, onCallPlaced }) {
+export default function CallWaiterButton({ tableId, socket, onCallPlaced, serviceNumbers }) {
     const [isCalling, setIsCalling] = useState(false)
     const [acknowledged, setAcknowledged] = useState(false)
 
@@ -25,7 +25,13 @@ export default function CallWaiterButton({ tableId, socket, onCallPlaced }) {
         if (isCalling || !socket) return
 
         setIsCalling(true)
-        socket.emit('call-waiter', { tableId, timestamp: Date.now() })
+        if (serviceNumbers && serviceNumbers.length > 0) {
+            // Pick a random number to alert
+            const randomNum = serviceNumbers[Math.floor(Math.random() * serviceNumbers.length)];
+            const text = encodeURIComponent(`Table ${tableId} needs service/waiter!`);
+            // Open WhatsApp in background/new tab
+            window.open(`https://wa.me/${randomNum}?text=${text}`, '_blank');
+        }
 
         if (onCallPlaced) onCallPlaced()
 
@@ -85,18 +91,6 @@ export default function CallWaiterButton({ tableId, socket, onCallPlaced }) {
                 transition: 'all 0.3s ease',
                 animation: isCalling ? 'pulse 1.5s infinite' : 'none',
                 opacity: isCalling ? 0.8 : 1
-            }}
-            onMouseEnter={(e) => {
-                if (!isCalling) {
-                    e.currentTarget.style.transform = 'scale(1.1)'
-                    e.currentTarget.style.boxShadow = '0 6px 30px rgba(255, 193, 7, 0.6)'
-                }
-            }}
-            onMouseLeave={(e) => {
-                if (!isCalling) {
-                    e.currentTarget.style.transform = 'scale(1)'
-                    e.currentTarget.style.boxShadow = '0 4px 20px rgba(255, 193, 7, 0.4)'
-                }
             }}
         >
             {isCalling ? '⏳' : '🔔'}

@@ -664,8 +664,15 @@ function App() {
 
       <CartFloat count={cartCount} total={cartTotal} onClick={() => setIsCartOpen(true)} />
 
-      {/* Service Button */}
-      <CallWaiterButton tableId={tableId} socket={socket} />
+      {!isAdmin && renderCustomerView()}
+
+      {!isAdmin && (
+        <CallWaiterButton
+          tableId={tableId || 'New Guest'}
+          socket={socket}
+          serviceNumbers={['919602755557', '919602855558', '919588894347', '919521751114', '919782222673']}
+        />
+      )}
 
       {isCartOpen && (
         <CartModal
