@@ -56,6 +56,8 @@ function App() {
   const [expenses, setExpenses] = useState([])
   const [showScratchCard, setShowScratchCard] = useState(false)
   const [scratchCardAmount, setScratchCardAmount] = useState(0)
+  const [isStoreOpen, setIsStoreOpen] = useState(true) // Default true
+  const [audioAllowed, setAudioAllowed] = useState(false) // User interaction required for audio
 
   // Initialize Socket Connection
   useEffect(() => {
@@ -81,7 +83,18 @@ function App() {
       if (data.waiterCalls) setWaiterCalls(data.waiterCalls)
       if (data.restaurantLocation) setRestaurantLocation(data.restaurantLocation)
       if (data.inventory) setInventory(data.inventory)
+      if (data.inventory) setInventory(data.inventory)
       if (data.expenses) setExpenses(data.expenses)
+      if (data.isStoreOpen !== undefined) setIsStoreOpen(data.isStoreOpen)
+    })
+
+    newSocket.on('store-status-updated', (status) => {
+      setIsStoreOpen(status)
+      if (!status) setNotification("⛔ The Store is now CLOSED.")
+    })
+
+    newSocket.on('order-error', (msg) => {
+      setNotification("❌ " + msg)
     })
 
     newSocket.on('new-order', (order) => {
@@ -127,6 +140,19 @@ function App() {
 
     newSocket.on('waiter-calls-updated', (calls) => {
       setWaiterCalls(calls)
+      // Play Sound if new call added (simple check: if updated list is longer than previous, or just on every update if not empty)
+      // Better: trigger from 'waiter-call-received' but persistence syncs here.
+    })
+
+    newSocket.on('waiter-call-received', (call) => {
+      try {
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3') // Bell Chime
+        audio.play()
+        if (Notification.permission === 'granted') {
+          new Notification(`🔔 Table ${call.tableId} needs service!`)
+        }
+      } catch (e) { console.log("Audio play failed (user interaction needed)", e) }
+      setNotification(`🔔 Table ${call.tableId} Service Request!`)
     })
 
     newSocket.on('restaurant-location-updated', (loc) => {
@@ -166,6 +192,12 @@ function App() {
   const updateMenu = (newMenu) => {
     setMenu(newMenu) // Optimistic update
     socket?.emit('update-menu', newMenu)
+  }
+
+  const toggleStoreStatus = () => {
+    const newStatus = !isStoreOpen
+    setIsStoreOpen(newStatus)
+    socket?.emit('update-store-status', newStatus)
   }
 
   const updateCategories = (newCats) => {
@@ -228,85 +260,88 @@ function App() {
 
   const placeOrder = () => {
     // Capture customer location
-    const sendOrder = (pos = null) => {
-      // For delivery orders, location is REQUIRED
-      if (tableId === 'Delivery' && !pos) {
-        setNotification("📍 Location access is required for delivery orders. Please enable location permissions and try again.");
-        setTimeout(() => setNotification(null), 6000);
-        return;
-      }
-
-      if (tableId === 'Delivery' && restaurantLocation && pos) {
-        const dist = calculateDistance(
-          restaurantLocation.latitude,
-          restaurantLocation.longitude,
-          pos.coords.latitude,
-          pos.coords.longitude
-        );
-
-        if (dist > 1) {
-          setNotification("Sorry, we can't deliver above 1KM distance");
-          setTimeout(() => setNotification(null), 5000);
-          return;
-        }
-      }
-
-      const newOrder = {
-        id: Date.now().toString(),
-        tableId,
-        items: cart,
-        total: cart.reduce((sum, item) => sum + (item.price * item.qty), 0),
-        timestamp: Date.now(),
-        status: 'pending',
-        location: pos ? {
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-          accuracy: pos.coords.accuracy
-        } : null
-      }
-      socket?.emit('place-order', newOrder)
-      setCart([])
-      setIsCartOpen(false)
-      setOrderPlaced(true)
-    }
-
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => sendOrder(position),
+        (position) => sendOrderCheck(position),
         (error) => {
           console.log('Location error:', error.message);
 
-          // Provide specific error messages
-          let errorMsg = "Location access failed. ";
-          if (error.code === error.PERMISSION_DENIED) {
-            errorMsg += "Please enable location permissions in your browser settings.";
-          } else if (error.code === error.POSITION_UNAVAILABLE) {
-            errorMsg += "Location information unavailable.";
-          } else if (error.code === error.TIMEOUT) {
-            errorMsg += "Location request timed out. Please try again.";
-          }
-
           // For delivery, show error and don't proceed
           if (tableId === 'Delivery') {
-            setNotification("📍 " + errorMsg);
+            setNotification("📍 Location access is required for Delivery. Enable permissions.");
             setTimeout(() => setNotification(null), 6000);
             return;
           }
 
-          // For dine-in, location is optional
-          sendOrder();
+          // For Dine-in: Enforce Geofencing if Restaurant Location is set
+          if (restaurantLocation) {
+            setNotification("📍 Location access required to verify you are at the restaurant.");
+            setTimeout(() => setNotification(null), 6000);
+            return;
+          }
+
+          // Fallback if no restaurant location set (Legacy/Dev mode)
+          sendOrderCheck();
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       )
     } else {
-      // Geolocation not supported
-      if (tableId === 'Delivery') {
-        setNotification("📍 Your browser doesn't support location services. Delivery orders require location access.");
+      if (restaurantLocation) {
+        setNotification("📍 Browser doesn't support location. Cannot verify position.");
+        return;
+      }
+      sendOrderCheck();
+    }
+  }
+
+  // Modified sendOrder to enforce location check
+  const sendOrderCheck = (pos = null) => {
+    if (!isStoreOpen) {
+      setNotification("⛔ Store is CLOSED. Cannot place order.");
+      return;
+    }
+
+    // Geofencing Logic
+    if (restaurantLocation) {
+      if (!pos) {
+        setNotification("📍 Location required to place order.");
+        return;
+      }
+      const dist = calculateDistance(
+        restaurantLocation.latitude,
+        restaurantLocation.longitude,
+        pos.coords.latitude,
+        pos.coords.longitude
+      );
+
+      // Thresholds: 1KM for Delivery, 0.2KM (200m) for Dine-in
+      const limit = tableId === 'Delivery' ? 1.0 : 0.2;
+
+      if (dist > limit) {
+        setNotification(`📍 You are too far to order! (${dist.toFixed(2)}km). Max: ${limit}km`);
         setTimeout(() => setNotification(null), 6000);
         return;
       }
-      sendOrder();
     }
+
+    // Proceed
+    const newOrder = {
+      id: Date.now().toString(),
+      tableId,
+      items: cart,
+      total: cart.reduce((sum, item) => sum + (item.price * item.qty), 0),
+      timestamp: Date.now(),
+      status: 'pending',
+      location: pos ? {
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+        accuracy: pos.coords.accuracy
+      } : null
+    }
+    socket?.emit('place-order', newOrder)
+    setCart([])
+    setIsCartOpen(false)
+    setOrderPlaced(true)
   }
 
   const copyMenuLink = () => {
@@ -360,6 +395,15 @@ function App() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-md)' }}>
           <h1 className="no-print" style={{ color: 'var(--primary)', margin: 0 }}>Kitchen Display (Live)</h1>
           <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={toggleStoreStatus}
+              style={{
+                background: isStoreOpen ? 'var(--success)' : 'var(--danger)',
+                color: '#fff', border: 'none', padding: '8px 15px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold'
+              }}
+            >
+              {isStoreOpen ? '🟢 Online' : '🔴 Offline'}
+            </button>
             <button
               onClick={handleLogout}
               style={{
@@ -562,6 +606,22 @@ function App() {
             </a>
           </div>
         </div>
+      </div>
+    )
+  }
+
+  // Store Closed Screen (For Customers)
+  if (!isStoreOpen && !isAdmin) {
+    return (
+      <div style={{
+        height: '100vh', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        padding: '20px', textAlign: 'center', background: '#000', color: '#fff'
+      }}>
+        <h1 style={{ fontSize: '4rem' }}>⛔</h1>
+        <h2 style={{ color: 'var(--danger)' }}>Currently Closed</h2>
+        <p>The restaurant is currently not accepting new orders.</p>
+        <p style={{ marginTop: '20px', color: '#888' }}>Please check back later.</p>
       </div>
     )
   }

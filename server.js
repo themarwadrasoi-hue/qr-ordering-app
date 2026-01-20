@@ -46,6 +46,7 @@ let tableBills = {}; // { tableId: { orders: [], total: 0 } }
 let waiterCalls = []; // [{ tableId, timestamp }]
 let restaurantLocation = null; // { latitude, longitude }
 let currentOTP = null;
+let isStoreOpen = true; // Default to open
 
 // Inventory Management
 let inventory = [
@@ -79,6 +80,7 @@ const loadData = () => {
             if (data.restaurantLocation) restaurantLocation = data.restaurantLocation;
             if (data.inventory) inventory = data.inventory;
             if (data.expenses) expenses = data.expenses;
+            if (data.isStoreOpen !== undefined) isStoreOpen = data.isStoreOpen;
 
             console.log('✅ Data loaded from disk');
         }
@@ -101,7 +103,8 @@ const saveData = () => {
                 tableBills,
                 restaurantLocation,
                 inventory,
-                expenses
+                expenses,
+                isStoreOpen
             };
             fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), (err) => {
                 if (err) console.error('❌ Error saving data:', err);
@@ -150,7 +153,8 @@ io.on('connection', (socket) => {
         waiterCalls,
         restaurantLocation,
         inventory,
-        expenses
+        expenses,
+        isStoreOpen
     });
 
     // Handle Restaurant Location Update
@@ -188,6 +192,11 @@ io.on('connection', (socket) => {
 
     // Handle New Order
     socket.on('place-order', (order) => {
+        if (!isStoreOpen) {
+            console.log('Order blocked: Store is closed');
+            socket.emit('order-error', 'Store is currently closed for new orders.');
+            return;
+        }
         console.log('New Order:', order);
         orders.push(order);
 
@@ -301,6 +310,14 @@ io.on('connection', (socket) => {
             whatsappNumber = settings.whatsappNumber;
         }
         io.emit('settings-updated', { whatsappNumber });
+    });
+
+    // Handle Store Status Update
+    socket.on('update-store-status', (status) => {
+        console.log(`Store Status Changed: ${status ? 'OPEN' : 'CLOSED'}`);
+        isStoreOpen = status;
+        io.emit('store-status-updated', isStoreOpen);
+        saveData();
     });
 
     socket.on('disconnect', () => {
