@@ -665,7 +665,7 @@ function App() {
 
       <CartFloat count={cartCount} total={cartTotal} onClick={() => setIsCartOpen(true)} />
 
-      {!isAdmin && renderCustomerView()}
+
 
       {!isAdmin && (
         <CallWaiterButton
