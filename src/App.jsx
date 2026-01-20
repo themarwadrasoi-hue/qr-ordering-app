@@ -25,6 +25,7 @@ function App() {
   const [tableId, setTableId] = useState(new URLSearchParams(window.location.search).get('table') || null)
   const [adminView, setAdminView] = useState('orders') // 'orders' | 'menu' | 'qr' | 'settings' | 'reports' | 'bills'
   const [customerView, setCustomerView] = useState('choice') // 'choice' | 'menu'
+  const [selectedMenuType, setSelectedMenuType] = useState(null) // 'cafe' | 'restaurant' | 'hut'
 
   // App State
   const [activeCategory, setActiveCategory] = useState('all')
@@ -202,9 +203,11 @@ function App() {
   }
 
   // Derived
-  const filteredItems = activeCategory === 'all'
-    ? menu
-    : menu.filter(i => i.category === activeCategory)
+  const filteredItems = menu.filter(i => {
+    const matchesType = !selectedMenuType || i.menuType === selectedMenuType
+    const matchesCategory = activeCategory === 'all' || i.category === activeCategory
+    return matchesType && matchesCategory
+  })
 
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0)
   const cartCount = cart.reduce((sum, item) => sum + item.qty, 0)
@@ -426,69 +429,55 @@ function App() {
         <h1 style={{ fontSize: '2.5rem', color: 'var(--primary)', marginBottom: '1rem' }}>WELCOME TO</h1>
         <h2 style={{ fontSize: '3rem', color: '#fff', marginBottom: '2.5rem', fontWeight: '900' }}>THE MARWAD RASOI</h2>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%', maxWidth: '400px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', width: '100%', maxWidth: '500px' }}>
           <button
-            onClick={() => setCustomerView('menu')}
-            style={{
-              padding: '25px',
-              fontSize: '1.4rem',
-              fontWeight: 'bold',
-              background: 'linear-gradient(135deg, var(--primary) 0%, #ff9800 100%)',
-              color: '#000',
-              border: 'none',
-              borderRadius: '20px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '15px',
-              boxShadow: '0 10px 30px rgba(255, 193, 7, 0.3)',
-              transition: 'transform 0.2s'
+            onClick={() => {
+              setSelectedMenuType('cafe')
+              setCustomerView('menu')
             }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+            style={choiceButtonStyle('linear-gradient(135deg, #FF9800 0%, #F44336 100%)')}
           >
-            <span style={{ fontSize: '2rem' }}>🍽️</span>
-            <span>Browse Menu</span>
+            <span style={{ fontSize: '2.5rem' }}>☕</span>
+            <span>Cafe Menu</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setSelectedMenuType('restaurant')
+              setCustomerView('menu')
+            }}
+            style={choiceButtonStyle('linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%)')}
+          >
+            <span style={{ fontSize: '2.5rem' }}>🍽️</span>
+            <span>Restaurant Menu</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setSelectedMenuType('hut')
+              setCustomerView('menu')
+            }}
+            style={choiceButtonStyle('linear-gradient(135deg, #2196F3 0%, #1565C0 100%)')}
+          >
+            <span style={{ fontSize: '2.5rem' }}>⛺</span>
+            <span>Hut Menu</span>
           </button>
 
           <button
             onClick={() => {
               socket?.emit('call-waiter', { tableId, timestamp: Date.now() })
-              setNotification("Waiter called for Table " + tableId)
+              setNotification("Service requested for Table " + tableId)
               setTimeout(() => setNotification(null), 5000)
             }}
-            style={{
-              padding: '25px',
-              fontSize: '1.4rem',
-              fontWeight: 'bold',
-              background: 'rgba(255,255,255,0.05)',
-              color: '#fff',
-              border: '2px solid rgba(255,255,255,0.2)',
-              borderRadius: '20px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '15px',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.1)'
-              e.currentTarget.style.borderColor = 'var(--primary)'
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'
-            }}
+            style={choiceButtonStyle('rgba(255,255,255,0.1)', true)}
           >
-            <span style={{ fontSize: '2rem' }}>🔔</span>
-            <span>Call Waiter</span>
+            <span style={{ fontSize: '2.5rem' }}>🔔</span>
+            <span>Service Please</span>
           </button>
+        </div>
 
-          <div style={{ marginTop: '20px', color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>
-            Table Number: <strong style={{ color: 'var(--primary)' }}>{tableId}</strong>
-          </div>
+        <div style={{ marginTop: '20px', color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>
+          Table Number: <strong style={{ color: 'var(--primary)' }}>{tableId}</strong>
         </div>
       </div>
     )
@@ -582,6 +571,24 @@ const getTabStyle = (isActive) => ({
   color: isActive ? '#000' : 'var(--text-secondary)',
   borderRadius: 'var(--radius-sm)',
   fontWeight: 'bold'
+})
+
+const choiceButtonStyle = (bg, isSecondary = false) => ({
+  padding: '25px 15px',
+  fontSize: '1.1rem',
+  fontWeight: 'bold',
+  background: bg,
+  color: isSecondary ? '#fff' : '#000',
+  border: isSecondary ? '2px solid rgba(255,255,255,0.2)' : 'none',
+  borderRadius: '24px',
+  cursor: 'pointer',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '12px',
+  boxShadow: isSecondary ? 'none' : '0 10px 20px rgba(0,0,0,0.3)',
+  transition: 'all 0.2s'
 })
 
 export default App

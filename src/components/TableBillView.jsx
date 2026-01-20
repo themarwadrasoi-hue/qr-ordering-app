@@ -171,7 +171,7 @@ export default function TableBillView({ bill, tableId, onClose, onCallWaiter }) 
                             gap: '10px'
                         }}
                     >
-                        🔔 Call Waiter for Payment
+                        <span>🔔 Service Please for Payment</span>
                     </button>
                     <button
                         onClick={onClose}

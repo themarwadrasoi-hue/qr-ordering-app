@@ -11,6 +11,7 @@ export default function AdminMenuManager({ menu, categories, onUpdate, onUpdateC
         title: '',
         desc: '',
         price: '',
+        menuType: 'restaurant',
         category: categories[0]?.id || '',
         subCategory: '',
         isAvailable: true,
@@ -164,6 +165,7 @@ export default function AdminMenuManager({ menu, categories, onUpdate, onUpdateC
                             <div style={{ fontWeight: '600' }}>{item.title}</div>
                             <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>{item.category}</div>
                             <div style={{ color: 'var(--primary)', fontSize: '0.9rem' }}>₹{item.price} {!item.isAvailable && '(Unavailable)'}</div>
+                            <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginTop: '2px', textTransform: 'capitalize' }}>Type: {item.menuType || 'restaurant'}</div>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             <button
@@ -228,6 +230,15 @@ export default function AdminMenuManager({ menu, categories, onUpdate, onUpdateC
                                     required
                                     style={{ flex: 1, padding: '10px', background: '#222', border: '1px solid #333', color: '#fff', borderRadius: '4px' }}
                                 />
+                                <select
+                                    value={formData.menuType || 'restaurant'}
+                                    onChange={e => setFormData({ ...formData, menuType: e.target.value })}
+                                    style={{ flex: 1, padding: '10px', background: '#222', border: '1px solid #333', color: '#fff', borderRadius: '4px' }}
+                                >
+                                    <option value="cafe">Cafe Menu</option>
+                                    <option value="restaurant">Restaurant Menu</option>
+                                    <option value="hut">Hut Menu</option>
+                                </select>
                                 <select
                                     value={formData.category}
                                     onChange={e => setFormData({ ...formData, category: e.target.value })}

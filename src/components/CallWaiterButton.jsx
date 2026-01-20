@@ -54,7 +54,7 @@ export default function CallWaiterButton({ tableId, socket, onCallPlaced }) {
                 gap: '8px'
             }}>
                 <span style={{ fontSize: '1.2rem' }}>✓</span>
-                Waiter Coming!
+                <span>Service Coming!</span>
             </div>
         )
     }
