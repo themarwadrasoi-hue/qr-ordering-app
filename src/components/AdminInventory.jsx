@@ -1,9 +1,15 @@
 import React, { useState } from 'react'
 
-export default function AdminInventory({ inventory, onUpdateInventory }) {
+export default function AdminInventory({ inventory, onUpdateInventory, onAddItem, onDeleteItem }) {
     const [editingItem, setEditingItem] = useState(null)
+    const [isFullEdit, setIsFullEdit] = useState(false)
+    const [editData, setEditData] = useState(null)
+
     const [adjustAmount, setAdjustAmount] = useState('')
     const [adjustReason, setAdjustReason] = useState('purchase')
+
+    const [isAdding, setIsAdding] = useState(false)
+    const [newItem, setNewItem] = useState({ name: '', unit: 'kg', stock: 0, minStock: 5, usedToday: 0 })
 
     const getStockStatus = (item) => {
         if (item.stock <= 0) return { icon: '🔴', text: 'OUT OF STOCK', color: '#f44336' }
@@ -25,6 +31,22 @@ export default function AdminInventory({ inventory, onUpdateInventory }) {
         handleAdjustStock(item, amount)
     }
 
+    const handleSaveFullEdit = () => {
+        if (!editData.name || !editData.unit) return
+        onUpdateInventory(editData)
+        setEditingItem(null)
+        setIsFullEdit(false)
+    }
+
+    const handleAddNewItem = (e) => {
+        e.preventDefault()
+        if (!newItem.name) return
+        const id = newItem.name.toLowerCase().replace(/\s+/g, '_')
+        onAddItem({ ...newItem, id, lastUpdated: Date.now() })
+        setIsAdding(false)
+        setNewItem({ name: '', unit: 'kg', stock: 0, minStock: 5, usedToday: 0 })
+    }
+
     const handleResetDailyUsage = () => {
         if (confirm('Reset daily usage counters for all items?')) {
             inventory.forEach(item => {
@@ -41,21 +63,70 @@ export default function AdminInventory({ inventory, onUpdateInventory }) {
         <div style={{ padding: 'var(--spacing-md)', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-md)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-md)' }}>
                 <h2>Inventory Management</h2>
-                <button
-                    onClick={handleResetDailyUsage}
-                    style={{
-                        background: 'rgba(255,255,255,0.1)',
-                        color: 'var(--text-main)',
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        padding: '8px 15px',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        fontSize: '0.85rem'
-                    }}
-                >
-                    🔄 Reset Daily Usage
-                </button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                        onClick={() => setIsAdding(!isAdding)}
+                        style={{
+                            background: isAdding ? '#f44336' : 'var(--primary)',
+                            color: '#000', border: 'none', padding: '8px 15px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold'
+                        }}
+                    >
+                        {isAdding ? '✕ Cancel' : '+ Add Item'}
+                    </button>
+                    <button
+                        onClick={handleResetDailyUsage}
+                        style={{
+                            background: 'rgba(255,255,255,0.1)',
+                            color: 'var(--text-main)',
+                            border: '1px solid rgba(255,255,255,0.2)',
+                            padding: '8px 15px',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontSize: '0.85rem'
+                        }}
+                    >
+                        🔄 Reset Daily Usage
+                    </button>
+                </div>
             </div>
+
+            {/* Add New Item Form */}
+            {isAdding && (
+                <div style={{ marginBottom: '25px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid rgba(255,193,7,0.3)' }}>
+                    <h4 style={{ marginBottom: '15px' }}>Add New Ingredient</h4>
+                    <form onSubmit={handleAddNewItem} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
+                        <input
+                            placeholder="Name (e.g. Potato)"
+                            value={newItem.name}
+                            onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                            style={inputStyle}
+                            required
+                        />
+                        <input
+                            placeholder="Unit (kg, pcs, liters)"
+                            value={newItem.unit}
+                            onChange={(e) => setNewItem({ ...newItem, unit: e.target.value })}
+                            style={inputStyle}
+                            required
+                        />
+                        <input
+                            type="number"
+                            placeholder="Initial Stock"
+                            value={newItem.stock}
+                            onChange={(e) => setNewItem({ ...newItem, stock: parseFloat(e.target.value) })}
+                            style={inputStyle}
+                        />
+                        <input
+                            type="number"
+                            placeholder="Min Stock Alert"
+                            value={newItem.minStock}
+                            onChange={(e) => setNewItem({ ...newItem, minStock: parseFloat(e.target.value) })}
+                            style={inputStyle}
+                        />
+                        <button type="submit" style={actionButtonStyle('var(--primary)', '#000')}>Save Item</button>
+                    </form>
+                </div>
+            )}
 
             {/* Daily Summary Cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '30px' }}>
@@ -94,9 +165,8 @@ export default function AdminInventory({ inventory, onUpdateInventory }) {
                         <tr style={{ background: 'rgba(255,255,255,0.1)', textAlign: 'left' }}>
                             <th style={thStyle}>Status</th>
                             <th style={thStyle}>Ingredient</th>
-                            <th style={thStyle}>Current Stock</th>
-                            <th style={thStyle}>Used Today</th>
-                            <th style={thStyle}>Min Stock</th>
+                            <th style={thStyle}>Stock Control</th>
+                            <th style={thStyle}>Threshold</th>
                             <th style={thStyle}>Actions</th>
                         </tr>
                     </thead>
@@ -108,92 +178,106 @@ export default function AdminInventory({ inventory, onUpdateInventory }) {
                             return (
                                 <tr key={item.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                     <td style={tdStyle}>
-                                        <span style={{ fontSize: '1.2rem' }}>{status.icon}</span>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                            <span style={{ fontSize: '1.2rem' }}>{status.icon}</span>
+                                            <span style={{ fontSize: '0.6rem', color: status.color, fontWeight: 'bold' }}>{status.text}</span>
+                                        </div>
                                     </td>
                                     <td style={tdStyle}>
-                                        <div style={{ fontWeight: 'bold' }}>{item.name}</div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Unit: {item.unit}</div>
-                                    </td>
-                                    <td style={{ ...tdStyle, color: status.color, fontWeight: 'bold', fontSize: '1.1rem' }}>
-                                        {item.stock} {item.unit}
+                                        {isEditing && isFullEdit ? (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                                <input
+                                                    value={editData.name}
+                                                    onChange={e => setEditData({ ...editData, name: e.target.value })}
+                                                    style={{ ...inputStyle, width: '120px' }}
+                                                />
+                                                <input
+                                                    value={editData.unit}
+                                                    onChange={e => setEditData({ ...editData, unit: e.target.value })}
+                                                    style={{ ...inputStyle, width: '60px', fontSize: '0.7rem' }}
+                                                />
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div style={{ fontWeight: 'bold' }}>{item.name}</div>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Unit: {item.unit}</div>
+                                            </>
+                                        )}
                                     </td>
                                     <td style={tdStyle}>
-                                        <span style={{ color: 'var(--primary)' }}>{item.usedToday} {item.unit}</span>
-                                    </td>
-                                    <td style={tdStyle}>
-                                        {item.minStock} {item.unit}
-                                    </td>
-                                    <td style={tdStyle}>
-                                        {isEditing ? (
+                                        {isEditing && !isFullEdit ? (
                                             <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
                                                 <input
                                                     type="number"
                                                     value={adjustAmount}
                                                     onChange={(e) => setAdjustAmount(e.target.value)}
-                                                    placeholder="±Amount"
-                                                    style={{
-                                                        width: '80px',
-                                                        padding: '5px',
-                                                        background: '#222',
-                                                        border: '1px solid #444',
-                                                        color: '#fff',
-                                                        borderRadius: '4px'
-                                                    }}
+                                                    placeholder="±Value"
+                                                    style={{ width: '70px', ...inputStyle }}
                                                 />
-                                                <select
-                                                    value={adjustReason}
-                                                    onChange={(e) => setAdjustReason(e.target.value)}
-                                                    style={{
-                                                        padding: '5px',
-                                                        background: '#222',
-                                                        border: '1px solid #444',
-                                                        color: '#fff',
-                                                        borderRadius: '4px',
-                                                        fontSize: '0.8rem'
-                                                    }}
-                                                >
-                                                    <option value="purchase">Purchase</option>
-                                                    <option value="wastage">Wastage</option>
-                                                    <option value="adjustment">Adjustment</option>
-                                                </select>
-                                                <button
-                                                    onClick={() => handleManualAdjust(item)}
-                                                    style={actionButtonStyle('#4caf50')}
-                                                >
-                                                    ✓
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        setEditingItem(null)
-                                                        setAdjustAmount('')
-                                                    }}
-                                                    style={actionButtonStyle('#f44336')}
-                                                >
-                                                    ✕
-                                                </button>
+                                                <button onClick={() => handleManualAdjust(item)} style={actionButtonStyle('#4caf50')}>✓</button>
+                                                <button onClick={() => { setEditingItem(null); setAdjustAmount('') }} style={actionButtonStyle('#f44336')}>✕</button>
+                                            </div>
+                                        ) : (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <div style={{ color: status.color, fontWeight: 'bold', fontSize: '1.2rem' }}>
+                                                    {item.stock}
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '2px' }}>
+                                                    <button onClick={() => handleAdjustStock(item, 1)} style={miniButtonStyle('#4caf50')}>+</button>
+                                                    <button onClick={() => handleAdjustStock(item, -1)} style={miniButtonStyle('#f44336')}>-</button>
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Today: {item.usedToday} {item.unit}</div>
+                                    </td>
+                                    <td style={tdStyle}>
+                                        {isEditing && isFullEdit ? (
+                                            <input
+                                                type="number"
+                                                value={editData.minStock}
+                                                onChange={e => setEditData({ ...editData, minStock: parseFloat(e.target.value) })}
+                                                style={{ ...inputStyle, width: '60px' }}
+                                            />
+                                        ) : (
+                                            <span>Min: {item.minStock}</span>
+                                        )}
+                                    </td>
+                                    <td style={tdStyle}>
+                                        {isEditing && isFullEdit ? (
+                                            <div style={{ display: 'flex', gap: '5px' }}>
+                                                <button onClick={handleSaveFullEdit} style={actionButtonStyle('var(--success)')}>SAVE</button>
+                                                <button onClick={() => { setEditingItem(null); setIsFullEdit(false) }} style={actionButtonStyle('#555')}>CANCEL</button>
                                             </div>
                                         ) : (
                                             <div style={{ display: 'flex', gap: '5px' }}>
                                                 <button
-                                                    onClick={() => handleAdjustStock(item, 10)}
-                                                    style={actionButtonStyle('#4caf50')}
-                                                    title="Add 10"
+                                                    onClick={() => {
+                                                        setEditingItem(item.id);
+                                                        setIsFullEdit(true);
+                                                        setEditData({ ...item });
+                                                    }}
+                                                    style={actionButtonStyle('rgba(255,255,255,0.1)', 'var(--primary)')}
+                                                    title="Edit Details"
                                                 >
-                                                    +10
-                                                </button>
-                                                <button
-                                                    onClick={() => handleAdjustStock(item, -10)}
-                                                    style={actionButtonStyle('#f44336')}
-                                                    title="Remove 10"
-                                                >
-                                                    -10
+                                                    ✏️
                                                 </button>
                                                 <button
                                                     onClick={() => setEditingItem(item.id)}
-                                                    style={actionButtonStyle('#2196f3')}
-                                                    title="Custom adjustment"
+                                                    style={actionButtonStyle('rgba(255,255,255,0.1)')}
+                                                    title="Custom Stock"
                                                 >
-                                                    ✏️
+                                                    ⚖️
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        if (confirm(`Delete ${item.name}?`)) {
+                                                            onDeleteItem(item.id)
+                                                        }
+                                                    }}
+                                                    style={actionButtonStyle('rgba(244, 67, 54, 0.1)', '#f44336')}
+                                                    title="Delete"
+                                                >
+                                                    🗑️
                                                 </button>
                                             </div>
                                         )}
@@ -239,13 +323,34 @@ const tdStyle = {
     verticalAlign: 'middle'
 }
 
-const actionButtonStyle = (bg) => ({
+const inputStyle = {
+    padding: '8px',
+    background: '#222',
+    border: '1px solid #444',
+    color: '#fff',
+    borderRadius: '4px',
+    fontSize: '0.85rem'
+}
+
+const actionButtonStyle = (bg, color = '#fff') => ({
     padding: '6px 10px',
     background: bg,
-    color: '#fff',
+    color: color,
     border: 'none',
     borderRadius: '4px',
     cursor: 'pointer',
     fontSize: '0.8rem',
     fontWeight: 'bold'
 })
+
+const miniButtonStyle = (bg) => ({
+    padding: '2px 8px',
+    background: bg,
+    color: '#fff',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '0.9rem',
+    fontWeight: 'bold'
+})
+

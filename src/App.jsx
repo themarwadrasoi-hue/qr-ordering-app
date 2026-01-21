@@ -258,6 +258,14 @@ function App() {
     socket?.emit('update-inventory', updatedItem)
   }
 
+  const addInventoryItem = (newItem) => {
+    socket?.emit('add-inventory-item', newItem)
+  }
+
+  const deleteInventoryItem = (itemId) => {
+    socket?.emit('delete-inventory-item', itemId)
+  }
+
   const addExpense = (expense) => {
     socket?.emit('add-expense', expense)
   }
@@ -529,7 +537,12 @@ function App() {
         ) : adminView === 'reports' ? (
           <AdminReports history={orderHistory} />
         ) : adminView === 'inventory' ? (
-          <AdminInventory inventory={inventory} onUpdateInventory={updateInventory} />
+          <AdminInventory
+            inventory={inventory}
+            onUpdateInventory={updateInventory}
+            onAddItem={addInventoryItem}
+            onDeleteItem={deleteInventoryItem}
+          />
         ) : adminView === 'expenses' ? (
           <AdminExpenses expenses={expenses} onAddExpense={addExpense} onDeleteExpense={deleteExpense} />
         ) : adminView === 'menu' ? (

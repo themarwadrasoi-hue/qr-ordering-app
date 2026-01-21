@@ -183,6 +183,20 @@ io.on('connection', (socket) => {
         saveData();
     });
 
+    socket.on('add-inventory-item', (newItem) => {
+        console.log('Inventory Item Added:', newItem);
+        inventory.push(newItem);
+        io.emit('inventory-updated', inventory);
+        saveData();
+    });
+
+    socket.on('delete-inventory-item', (itemId) => {
+        console.log('Inventory Item Deleted:', itemId);
+        inventory = inventory.filter(item => item.id !== itemId);
+        io.emit('inventory-updated', inventory);
+        saveData();
+    });
+
     // Handle Expense Management
     socket.on('add-expense', (expense) => {
         console.log('Expense Added:', expense);
