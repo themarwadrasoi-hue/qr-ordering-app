@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 
-export default function CallWaiterButton({ tableId, socket, onCallPlaced, serviceNumbers }) {
+export default function CallWaiterButton({ tableId, socket, onCallPlaced, serviceNumbers, isTooFar, onBlocked }) {
     const [isCalling, setIsCalling] = useState(false)
     const [acknowledged, setAcknowledged] = useState(false)
 
@@ -23,6 +23,11 @@ export default function CallWaiterButton({ tableId, socket, onCallPlaced, servic
 
     const handleCallWaiter = () => {
         if (isCalling || !socket) return
+
+        if (isTooFar && tableId !== 'TEST') {
+            if (onBlocked) onBlocked()
+            return
+        }
 
         setIsCalling(true)
 

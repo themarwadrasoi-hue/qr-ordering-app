@@ -805,6 +805,10 @@ function App() {
 
           <button
             onClick={() => {
+              if (isTooFar && tableId !== 'TEST') {
+                addNotification("📍 You must be at the restaurant to request service.", 'error')
+                return
+              }
               socket?.emit('call-waiter', { tableId, timestamp: Date.now() })
               addNotification("Service requested for Table " + tableId, 'service')
             }}
@@ -865,6 +869,8 @@ function App() {
           tableId={tableId || 'New Guest'}
           socket={socket}
           serviceNumbers={['919602755557', '919602855558', '919588894347', '919521751114', '919782222673']}
+          isTooFar={isTooFar}
+          onBlocked={() => addNotification("📍 You must be at the restaurant to request service.", 'error')}
         />
       )}
 
@@ -904,6 +910,10 @@ function App() {
           tableId={tableId}
           onClose={() => setIsBillOpen(false)}
           onCallWaiter={() => {
+            if (isTooFar && tableId !== 'TEST') {
+              addNotification("📍 You must be at the restaurant to request service.", 'error')
+              return
+            }
             socket?.emit('call-waiter', { tableId, timestamp: Date.now() })
             addNotification("Service requested for payment.", 'service')
           }}
