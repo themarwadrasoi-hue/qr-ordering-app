@@ -58,6 +58,9 @@ function App() {
   const [scratchCardAmount, setScratchCardAmount] = useState(0)
   const [isStoreOpen, setIsStoreOpen] = useState(true) // Default true
   const [audioAllowed, setAudioAllowed] = useState(false) // User interaction required for audio
+  const [distanceDebug, setDistanceDebug] = useState(null)
+  const [locationError, setLocationError] = useState(null)
+  const [isTooFar, setIsTooFar] = useState(false)
 
   // Initialize Socket Connection
   useEffect(() => {
@@ -184,6 +187,31 @@ function App() {
 
     return () => newSocket.close()
   }, [tableId])
+
+  // NEW: Continuous Location Check (Geofence on Load)
+  useEffect(() => {
+    if (tableId && !isAdmin && restaurantLocation) {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const dist = calculateDistance(
+              restaurantLocation.latitude, restaurantLocation.longitude,
+              pos.coords.latitude, pos.coords.longitude
+            )
+            setDistanceDebug(dist.toFixed(3) + ' km')
+            const limit = tableId === 'Delivery' ? 1.0 : 0.2
+            if (dist > limit) setIsTooFar(true)
+            else setIsTooFar(false)
+          },
+          (err) => {
+            setLocationError(err.message)
+            // If strict mode, we could block here too. For now let them browse but fail at order.
+          },
+          { enableHighAccuracy: true }
+        )
+      }
+    }
+  }, [tableId, isAdmin, restaurantLocation])
 
 
   const [orderPlaced, setOrderPlaced] = useState(false)
@@ -795,6 +823,20 @@ function App() {
           <span style={{ fontSize: '1.5rem' }}>🔔</span>
           {notification}
           <button onClick={() => setNotification(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}>×</button>
+        </div>
+      )}
+
+      {/* DEBUG FOOTER (Temporary for Verification) */}
+      {!isAdmin && (
+        <div style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0,
+          background: 'rgba(0,0,0,0.8)', color: '#0f0',
+          fontSize: '0.7rem', padding: '5px', textAlign: 'center', zIndex: 9999, pointerEvents: 'none'
+        }}>
+          Rest: {restaurantLocation ? `${restaurantLocation.latitude.toFixed(4)},${restaurantLocation.longitude.toFixed(4)}` : 'Wait...'} |
+          Dist: {distanceDebug || 'Calculating...'} |
+          Blocked: {isTooFar ? 'YES' : 'NO'} |
+          Err: {locationError || 'None'}
         </div>
       )}
     </div>

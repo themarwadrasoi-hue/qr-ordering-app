@@ -5,10 +5,10 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import cors from 'cors';
 import fs from 'fs';
+import { menuItems } from './src/data/menu.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 const app = express();
 const httpServer = createServer(app);
 // Increase limit for image uploads
@@ -30,7 +30,7 @@ app.use(cors());
 // In-Memory Database (replaces localStorage)
 let orders = [];
 let orderHistory = []; // Store completed orders
-let menu = [];
+let menu = menuItems;
 let whatsappNumber = '919602755557';
 let categories = [
     { id: 'all', name: 'All Items' },
@@ -73,7 +73,7 @@ const loadData = () => {
 
             if (data.orders && Array.isArray(data.orders)) orders = data.orders;
             if (data.orderHistory && Array.isArray(data.orderHistory)) orderHistory = data.orderHistory;
-            if (data.menu) menu = data.menu;
+            // if (data.menu) menu = data.menu; // DISABLED: Force sync from src/data/menu.js
             if (data.categories) categories = data.categories;
             if (data.whatsappNumber) whatsappNumber = data.whatsappNumber;
             if (data.tableBills) tableBills = data.tableBills;
