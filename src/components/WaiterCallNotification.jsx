@@ -52,7 +52,8 @@ export default function WaiterCallNotification({ calls, onAcknowledge }) {
         }}>
             {/* Audio Element */}
             <audio ref={audioRef} loop autoPlay>
-                <source src="https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3" type="audio/mpeg" />
+                {/* Louder Emergency Alarm Sound */}
+                <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg" />
             </audio>
 
             {isAudioBlocked && (

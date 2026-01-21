@@ -148,13 +148,11 @@ function App() {
     })
 
     newSocket.on('waiter-call-received', (call) => {
-      try {
-        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3') // Bell Chime
-        audio.play()
-        if (Notification.permission === 'granted') {
-          new Notification(`🔔 Table ${call.tableId} needs service!`)
-        }
-      } catch (e) { console.log("Audio play failed (user interaction needed)", e) }
+      // Audio handled by WaiterCallNotification component for Admin
+      // Just show notification toast here if needed
+      if (Notification.permission === 'granted') {
+        new Notification(`🔔 Table ${call.tableId} needs service!`)
+      }
       setNotification(`🔔 Table ${call.tableId} Service Request!`)
     })
 
