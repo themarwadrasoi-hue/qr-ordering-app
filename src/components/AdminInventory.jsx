@@ -68,10 +68,19 @@ export default function AdminInventory({ inventory, onUpdateInventory, onAddItem
                         onClick={() => setIsAdding(!isAdding)}
                         style={{
                             background: isAdding ? '#f44336' : 'var(--primary)',
-                            color: '#000', border: 'none', padding: '8px 15px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold'
+                            color: '#000',
+                            border: 'none',
+                            padding: '12px 24px',
+                            borderRadius: '12px',
+                            cursor: 'pointer',
+                            fontSize: '0.9rem',
+                            fontWeight: '900',
+                            boxShadow: isAdding ? 'none' : '0 4px 15px rgba(255, 193, 7, 0.3)',
+                            transform: isAdding ? 'none' : 'scale(1.05)',
+                            transition: 'all 0.2s ease'
                         }}
                     >
-                        {isAdding ? '✕ Cancel' : '+ Add Item'}
+                        {isAdding ? '✕ Close Form' : '➕ ADD NEW ITEM'}
                     </button>
                     <button
                         onClick={handleResetDailyUsage}

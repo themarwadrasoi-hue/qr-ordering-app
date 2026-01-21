@@ -5,7 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import cors from 'cors';
 import fs from 'fs';
-import { menuItems } from './src/data/menu.js';
+import { menuItems, categories as initialCategories } from './src/data/menu.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,14 +32,7 @@ let orders = [];
 let orderHistory = []; // Store completed orders
 let menu = menuItems;
 let whatsappNumber = '919602755557';
-let categories = [
-    { id: 'all', name: 'All Items' },
-    { id: 'burgers', name: 'Burgers' },
-    { id: 'pizza', name: 'Pizza' },
-    { id: 'chinese', name: 'Chinese' },
-    { id: 'drinks', name: 'Drinks' },
-    { id: 'dessert', name: 'Desserts' }
-];
+let categories = initialCategories;
 
 // NEW: Table Bills and Waiter Calls
 let tableBills = {}; // { tableId: { orders: [], total: 0 } }
@@ -74,7 +67,7 @@ const loadData = () => {
             if (data.orders && Array.isArray(data.orders)) orders = data.orders;
             if (data.orderHistory && Array.isArray(data.orderHistory)) orderHistory = data.orderHistory;
             // if (data.menu) menu = data.menu; // DISABLED: Force sync from src/data/menu.js
-            if (data.categories) categories = data.categories;
+            // if (data.categories) categories = data.categories; // DISABLED: Force sync from src/data/menu.js
             if (data.whatsappNumber) whatsappNumber = data.whatsappNumber;
             if (data.tableBills) tableBills = data.tableBills;
 

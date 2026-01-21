@@ -18,12 +18,18 @@ export default function AdminMenuManager({ menu, categories, onUpdate, onUpdateC
         image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=500&q=60'
     }
 
-    const [formData, setFormData] = useState(initialForm)
+    const [formData, setFormData] = useState({ ...initialForm, hasVariants: false, halfPrice: '', fullPrice: '' })
     const [newCategory, setNewCategory] = useState({ id: '', name: '' })
 
     const handleEdit = (item) => {
         setEditItem(item)
-        setFormData(item)
+        setFormData({
+            ...item,
+            hasVariants: !!item.variants,
+            halfPrice: item.variants?.half || '',
+            fullPrice: item.variants?.full || '',
+            price: item.price || ''
+        })
         setIsEditing(true)
     }
 
@@ -34,7 +40,7 @@ export default function AdminMenuManager({ menu, categories, onUpdate, onUpdateC
 
     const handleAddNew = () => {
         setEditItem(null)
-        setFormData({ ...initialForm, id: Date.now().toString() })
+        setFormData({ ...initialForm, id: Date.now().toString(), hasVariants: false, halfPrice: '', fullPrice: '' })
         setIsEditing(true)
     }
 
@@ -47,11 +53,27 @@ export default function AdminMenuManager({ menu, categories, onUpdate, onUpdateC
 
     const handleSave = (e) => {
         e.preventDefault()
+        let processedItem = { ...formData, price: Number(formData.price) }
+
+        if (formData.hasVariants) {
+            processedItem.variants = {
+                half: Number(formData.halfPrice),
+                full: Number(formData.fullPrice)
+            }
+            processedItem.price = processedItem.variants.half // Default fallback
+        } else {
+            delete processedItem.variants
+        }
+
+        delete processedItem.hasVariants
+        delete processedItem.halfPrice
+        delete processedItem.fullPrice
+
         let updatedMenu
         if (editItem) {
-            updatedMenu = menu.map(m => m.id === editItem.id ? { ...formData, price: Number(formData.price) } : m)
+            updatedMenu = menu.map(m => m.id === editItem.id ? processedItem : m)
         } else {
-            updatedMenu = [...menu, { ...formData, price: Number(formData.price) }]
+            updatedMenu = [...menu, processedItem]
         }
         onUpdate(updatedMenu)
         setIsEditing(false)
@@ -113,9 +135,19 @@ export default function AdminMenuManager({ menu, categories, onUpdate, onUpdateC
 
                     <button
                         onClick={handleAddNew}
-                        style={{ background: 'var(--primary)', color: '#000', fontWeight: '700', padding: '8px 16px', borderRadius: '8px' }}
+                        style={{
+                            background: 'var(--primary)',
+                            color: '#000',
+                            fontWeight: '900',
+                            padding: '12px 24px',
+                            borderRadius: '12px',
+                            boxShadow: '0 4px 15px rgba(255, 193, 7, 0.3)',
+                            transform: 'scale(1.05)',
+                            border: 'none',
+                            cursor: 'pointer'
+                        }}
                     >
-                        + Add Item
+                        ➕ ADD NEW ITEM
                     </button>
                 </div>
             </div>
@@ -164,8 +196,11 @@ export default function AdminMenuManager({ menu, categories, onUpdate, onUpdateC
                         <div style={{ flex: 1 }}>
                             <div style={{ fontWeight: '600' }}>{item.title}</div>
                             <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>{item.category}</div>
-                            <div style={{ color: 'var(--primary)', fontSize: '0.9rem' }}>₹{item.price} {!item.isAvailable && '(Unavailable)'}</div>
-                            <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginTop: '2px', textTransform: 'capitalize' }}>Type: {item.menuType || 'restaurant'}</div>
+                            <div style={{ color: 'var(--primary)', fontSize: '0.9rem' }}>
+                                {item.variants ? `Half: ₹${item.variants.half} / Full: ₹${item.variants.full}` : `₹${item.price}`}
+                                {!item.isAvailable && ' (Unavailable)'}
+                            </div>
+                            <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginTop: '2px', textTransform: 'capitalize' }}>Type: {Array.isArray(item.menuType) ? item.menuType.join(', ') : (item.menuType || 'restaurant')}</div>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             <button
@@ -181,13 +216,13 @@ export default function AdminMenuManager({ menu, categories, onUpdate, onUpdateC
                             </button>
                             <button
                                 onClick={() => handleEdit(item)}
-                                style={{ fontSize: '0.75rem', padding: '4px 8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', color: '#fff' }}
+                                style={{ fontSize: '0.75rem', padding: '4px 8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}
                             >
                                 Edit
                             </button>
                             <button
                                 onClick={() => handleDelete(item.id)}
-                                style={{ fontSize: '0.75rem', padding: '4px 8px', background: 'rgba(255,50,50,0.1)', color: '#ff4d4d', borderRadius: '4px' }}
+                                style={{ fontSize: '0.75rem', padding: '4px 8px', background: 'rgba(255,50,50,0.1)', color: '#ff4d4d', borderRadius: '4px', border: '1px solid rgba(255,50,50,0.2)' }}
                             >
                                 Del
                             </button>
@@ -198,82 +233,149 @@ export default function AdminMenuManager({ menu, categories, onUpdate, onUpdateC
 
             {isEditing && (
                 <div style={{
-                    position: 'fixed', inset: 0, zIndex: 200,
-                    background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)',
-                    display: 'flex', justifyContent: 'center', alignItems: 'center'
+                    position: 'fixed', inset: 0, zIndex: 1000,
+                    background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(8px)',
+                    display: 'flex', justifyContent: 'center', alignItems: 'center', overflowY: 'auto', padding: '20px'
                 }}>
                     <div className="glass" style={{
                         background: '#121212', padding: 'var(--spacing-lg)',
-                        borderRadius: 'var(--radius-md)', width: '90%', maxWidth: '500px'
+                        borderRadius: 'var(--radius-md)', width: '100%', maxWidth: '550px',
+                        border: '1px solid rgba(255,193,7,0.3)', boxShadow: '0 0 50px rgba(0,0,0,1)'
                     }}>
-                        <h3 style={{ marginBottom: 'var(--spacing-md)' }}>{editItem ? 'Edit Item' : 'New Item'}</h3>
-                        <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <h3 style={{ marginBottom: 'var(--spacing-md)', fontSize: '1.5rem', color: 'var(--primary)' }}>
+                            {editItem ? 'Edit Menu Item' : '✨ Add New Menu Item'}
+                        </h3>
+                        <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                             <input
-                                placeholder="Title"
+                                placeholder="Item Title (e.g. Paneer Butter Masala)"
                                 value={formData.title}
                                 onChange={e => setFormData({ ...formData, title: e.target.value })}
                                 required
-                                style={{ padding: '10px', background: '#222', border: '1px solid #333', color: '#fff', borderRadius: '4px' }}
+                                style={{ padding: '12px', background: '#222', border: '1px solid #333', color: '#fff', borderRadius: '8px', fontSize: '1rem' }}
                             />
                             <textarea
-                                placeholder="Description"
+                                placeholder="Short Description (Appears in Menu)"
                                 value={formData.desc}
                                 onChange={e => setFormData({ ...formData, desc: e.target.value })}
-                                style={{ padding: '10px', background: '#222', border: '1px solid #333', color: '#fff', borderRadius: '4px', height: '80px' }}
-                            />
-                            <div style={{ display: 'flex', gap: '10px' }}>
-                                <input
-                                    type="number"
-                                    placeholder="Price"
-                                    value={formData.price}
-                                    onChange={e => setFormData({ ...formData, price: e.target.value })}
-                                    required
-                                    style={{ flex: 1, padding: '10px', background: '#222', border: '1px solid #333', color: '#fff', borderRadius: '4px' }}
-                                />
-                                <select
-                                    value={formData.menuType || 'restaurant'}
-                                    onChange={e => setFormData({ ...formData, menuType: e.target.value })}
-                                    style={{ flex: 1, padding: '10px', background: '#222', border: '1px solid #333', color: '#fff', borderRadius: '4px' }}
-                                >
-                                    <option value="cafe">Cafe Menu</option>
-                                    <option value="restaurant">Restaurant Menu</option>
-                                    <option value="hut">Hut Menu</option>
-                                </select>
-                                <select
-                                    value={formData.category}
-                                    onChange={e => setFormData({ ...formData, category: e.target.value })}
-                                    style={{ flex: 1, padding: '10px', background: '#222', border: '1px solid #333', color: '#fff', borderRadius: '4px' }}
-                                >
-                                    {categories.filter(c => c.id !== 'all').map(c => (
-                                        <option key={c.id} value={c.id}>{c.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <input
-                                placeholder="Sub-category (Optional)"
-                                value={formData.subCategory || ''}
-                                onChange={e => setFormData({ ...formData, subCategory: e.target.value })}
-                                style={{ padding: '10px', background: '#222', border: '1px solid #333', color: '#fff', borderRadius: '4px' }}
-                            />
-                            <input
-                                placeholder="Image URL"
-                                value={formData.image}
-                                onChange={e => setFormData({ ...formData, image: e.target.value })}
-                                style={{ padding: '10px', background: '#222', border: '1px solid #333', color: '#fff', borderRadius: '4px' }}
+                                style={{ padding: '12px', background: '#222', border: '1px solid #333', color: '#fff', borderRadius: '8px', height: '100px', fontSize: '0.9rem' }}
                             />
 
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginTop: '4px' }}>
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                <label style={{ fontSize: '0.9rem', color: '#aaa', display: 'block', marginBottom: '10px' }}>Available in Menus:</label>
+                                <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                                    {['restaurant', 'cafe', 'hut'].map(type => (
+                                        <label key={type} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', textTransform: 'capitalize' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={Array.isArray(formData.menuType) ? formData.menuType.includes(type) : formData.menuType === type}
+                                                onChange={e => {
+                                                    const current = Array.isArray(formData.menuType) ? formData.menuType : [formData.menuType || 'restaurant']
+                                                    const updated = e.target.checked
+                                                        ? [...current, type]
+                                                        : current.filter(t => t !== type)
+                                                    setFormData({ ...formData, menuType: updated })
+                                                }}
+                                                style={{ width: '18px', height: '18px' }}
+                                            />
+                                            {type}
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                    <label style={{ fontSize: '0.8rem', color: '#888' }}>Category</label>
+                                    <select
+                                        value={formData.category}
+                                        onChange={e => setFormData({ ...formData, category: e.target.value })}
+                                        style={{ padding: '10px', background: '#222', border: '1px solid #333', color: '#fff', borderRadius: '8px' }}
+                                    >
+                                        {categories.filter(c => c.id !== 'all').map(c => (
+                                            <option key={c.id} value={c.id}>{c.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                    <label style={{ fontSize: '0.8rem', color: '#888' }}>Sub-category</label>
+                                    <input
+                                        placeholder="Optional"
+                                        value={formData.subCategory || ''}
+                                        onChange={e => setFormData({ ...formData, subCategory: e.target.value })}
+                                        style={{ padding: '10px', background: '#222', border: '1px solid #333', color: '#fff', borderRadius: '8px' }}
+                                    />
+                                </div>
+                            </div>
+
+                            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: '15px' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.hasVariants}
+                                        onChange={e => setFormData({ ...formData, hasVariants: e.target.checked })}
+                                        style={{ width: '18px', height: '18px' }}
+                                    />
+                                    <span style={{ fontWeight: 'bold' }}>Has Portions (Half / Full)?</span>
+                                </label>
+
+                                {formData.hasVariants ? (
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                            <label style={{ fontSize: '0.8rem', color: '#888' }}>Half Price (₹)</label>
+                                            <input
+                                                type="number"
+                                                value={formData.halfPrice}
+                                                onChange={e => setFormData({ ...formData, halfPrice: e.target.value })}
+                                                style={{ padding: '10px', background: '#333', border: 'none', color: '#fff', borderRadius: '8px' }}
+                                            />
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                            <label style={{ fontSize: '0.8rem', color: '#888' }}>Full Price (₹)</label>
+                                            <input
+                                                type="number"
+                                                value={formData.fullPrice}
+                                                onChange={e => setFormData({ ...formData, fullPrice: e.target.value })}
+                                                style={{ padding: '10px', background: '#333', border: 'none', color: '#fff', borderRadius: '8px' }}
+                                            />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                        <label style={{ fontSize: '0.8rem', color: '#888' }}>Standard Price (₹)</label>
+                                        <input
+                                            type="number"
+                                            value={formData.price}
+                                            onChange={e => setFormData({ ...formData, price: e.target.value })}
+                                            style={{ padding: '10px', background: '#333', border: 'none', color: '#fff', borderRadius: '8px' }}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            <input
+                                placeholder="Image URL (Clear photo link)"
+                                value={formData.image}
+                                onChange={e => setFormData({ ...formData, image: e.target.value })}
+                                style={{ padding: '10px', background: '#222', border: '1px solid #333', color: '#fff', borderRadius: '8px' }}
+                            />
+
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', opacity: 0.8 }}>
                                 <input
                                     type="checkbox"
                                     checked={formData.isAvailable}
                                     onChange={e => setFormData({ ...formData, isAvailable: e.target.checked })}
+                                    style={{ width: '16px', height: '16px' }}
                                 />
-                                <span>Item Available</span>
+                                <span style={{ fontSize: '0.9rem' }}>Item Available to Customers</span>
                             </label>
 
-                            <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
-                                <button type="submit" style={{ flex: 1, padding: '12px', background: 'var(--primary)', color: '#000', fontWeight: 'bold', borderRadius: '8px' }}>Save Changes</button>
-                                <button type="button" onClick={() => setIsEditing(false)} style={{ flex: 1, padding: '12px', background: '#333', color: '#fff', borderRadius: '8px' }}>Cancel</button>
+                            <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
+                                <button type="submit" style={{ flex: 2, padding: '14px', background: 'var(--primary)', color: '#000', fontWeight: '900', borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '1rem' }}>
+                                    {editItem ? 'CONFIRM CHANGES' : '✅ ADD TO MENU'}
+                                </button>
+                                <button type="button" onClick={() => setIsEditing(false)} style={{ flex: 1, padding: '14px', background: '#333', color: '#fff', borderRadius: '12px', border: 'none', cursor: 'pointer' }}>
+                                    CANCEL
+                                </button>
                             </div>
                         </form>
                     </div>

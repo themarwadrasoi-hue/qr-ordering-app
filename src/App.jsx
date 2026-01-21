@@ -392,6 +392,17 @@ function App() {
     return matchesType && matchesCategory
   })
 
+  const filteredCategories = categoriesState.filter(cat => {
+    if (cat.id === 'all') return true;
+    return (Array.isArray(menu) ? menu : []).some(i => {
+      const matchesType = !selectedMenuType ||
+        (Array.isArray(i.menuType)
+          ? i.menuType.includes(selectedMenuType)
+          : i.menuType === selectedMenuType);
+      return i.category === cat.id && matchesType;
+    });
+  });
+
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0)
   const cartCount = cart.reduce((sum, item) => sum + item.qty, 0)
 
@@ -480,7 +491,7 @@ function App() {
           <button onClick={() => setAdminView('reports')} style={getTabStyle(adminView === 'reports')}>Reports</button>
           <button onClick={() => setAdminView('inventory')} style={getTabStyle(adminView === 'inventory')}>Inventory</button>
           <button onClick={() => setAdminView('expenses')} style={getTabStyle(adminView === 'expenses')}>Expenses</button>
-          <button onClick={() => setAdminView('menu')} style={getTabStyle(adminView === 'menu')}>Edit Menu</button>
+          <button onClick={() => setAdminView('menu')} style={getTabStyle(adminView === 'menu')}>Manage Menu</button>
           <button onClick={() => setAdminView('qr')} style={getTabStyle(adminView === 'qr')}>QR Codes</button>
           <button onClick={() => setAdminView('settings')} style={getTabStyle(adminView === 'settings')}>Settings</button>
         </div>
@@ -758,6 +769,7 @@ function App() {
             onClick={() => {
               setSelectedMenuType('cafe')
               setCustomerView('menu')
+              setActiveCategory('all')
             }}
             style={choiceButtonStyle('linear-gradient(135deg, #FF9800 0%, #F44336 100%)')}
           >
@@ -769,6 +781,7 @@ function App() {
             onClick={() => {
               setSelectedMenuType('restaurant')
               setCustomerView('menu')
+              setActiveCategory('all')
             }}
             style={choiceButtonStyle('linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%)')}
           >
@@ -780,6 +793,7 @@ function App() {
             onClick={() => {
               setSelectedMenuType('hut')
               setCustomerView('menu')
+              setActiveCategory('all')
             }}
             style={choiceButtonStyle('linear-gradient(135deg, #2196F3 0%, #1565C0 100%)')}
           >
@@ -828,11 +842,12 @@ function App() {
         onSwitchMenu={() => {
           setCustomerView('choice')
           setSelectedMenuType(null)
+          setActiveCategory('all')
         }}
       />
 
       <div className="container" style={{ paddingTop: 0 }}>
-        <CategoryTabs categories={categoriesState} activeCategory={activeCategory} onSelect={setActiveCategory} />
+        <CategoryTabs categories={filteredCategories} activeCategory={activeCategory} onSelect={setActiveCategory} />
         <MenuGrid items={filteredItems} onAdd={addToCart} />
       </div>
 
