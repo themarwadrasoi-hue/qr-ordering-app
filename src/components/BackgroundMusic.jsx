@@ -1,13 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react'
 
-export default function BackgroundMusic({ isPlaying = true, src = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" }) {
+export default function BackgroundMusic({ isPlaying = true, playlist = ["https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"] }) {
     const [muted, setMuted] = useState(false)
     const [userInteracted, setUserInteracted] = useState(false)
+    const [currentSrc, setCurrentSrc] = useState("")
     const audioRef = useRef(null)
+
+    // Pick a random song from playlist on mount or when playlist changes
+    useEffect(() => {
+        if (playlist && playlist.length > 0) {
+            const randomIndex = Math.floor(Math.random() * playlist.length)
+            setCurrentSrc(playlist[randomIndex])
+        }
+    }, [playlist])
 
     // Suggestion: Replace this URL with your own hosted MP3 for specific taste
     // Current: "SoundHelix Song 1" (Placeholder)
-    const MUSIC_URL = src
+    const MUSIC_URL = currentSrc
 
     useEffect(() => {
         // Attempt auto-play on mount
@@ -25,7 +34,7 @@ export default function BackgroundMusic({ isPlaying = true, src = "https://www.s
         } else if (audioRef.current) {
             audioRef.current.pause()
         }
-    }, [isPlaying, muted])
+    }, [isPlaying, muted, currentSrc])
 
     // Handle User Interaction to unlock Audio Context
     useEffect(() => {

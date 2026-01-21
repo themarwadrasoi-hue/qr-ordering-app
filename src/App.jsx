@@ -541,7 +541,13 @@ function App() {
         </a>
 
         {/* Admin Background Music */}
-        <BackgroundMusic src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" />
+        <BackgroundMusic
+          playlist={[
+            "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3",
+            "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3",
+            "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3"
+          ]}
+        />
       </div>
     )
   }
@@ -735,6 +741,16 @@ function App() {
         <div style={{ marginTop: '20px', color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>
           Table Number: <strong style={{ color: 'var(--primary)' }}>{tableId}</strong>
         </div>
+
+        {/* Welcome Music after QR Scan */}
+        {!isAdmin && customerView === 'choice' && (
+          <BackgroundMusic
+            playlist={[
+              "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3",
+              "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3"
+            ]}
+          />
+        )}
       </div >
     )
   }
@@ -769,9 +785,24 @@ function App() {
         />
       )}
 
-      {/* Background Music for Customers */}
+      {/* Background Music for Customers (Theme Based) */}
       {!isAdmin && customerView === 'menu' && (
-        <BackgroundMusic />
+        <BackgroundMusic
+          playlist={
+            selectedMenuType === 'cafe' ? [
+              "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+              "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+              "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"
+            ] : selectedMenuType === 'restaurant' ? [
+              "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+              "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+              "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3"
+            ] : [ // Hut / Silent / Light
+              "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",
+              "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3"
+            ]
+          }
+        />
       )}
 
       {isCartOpen && (
