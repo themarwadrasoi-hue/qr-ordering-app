@@ -1,7 +1,7 @@
 {
-  "description": "Premium Digital Menu and QR Ordering System for THE MARWAD FOOD ORDERING SYSTEM. Order food directly from your table.",
-  "name": "THE MARWAD FOOD ORDERING SYSTEM",
-  "short_name": "Marwad Food",
+  "description": "Premium Digital Menu and QR Ordering System for MARWAD DINING MENU. Order food directly from your table.",
+  "name": "MARWAD DINING MENU",
+  "short_name": "Marwad Dining",
   "id": "/?source=pwa",
   "start_url": "/?source=pwa",
   "scope": "/",

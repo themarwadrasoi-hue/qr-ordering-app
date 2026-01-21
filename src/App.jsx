@@ -630,7 +630,7 @@ function App() {
           lineHeight: '1.6'
         }}>
           Thank You from<br />
-          <strong style={{ color: 'var(--text-main)', fontSize: '1.4rem' }}>THE MARWAD FOOD ORDERING SYSTEM</strong>
+          <strong style={{ color: 'var(--text-main)', fontSize: '1.4rem' }}>MARWAD DINING MENU</strong>
         </p>
         <div style={{ marginTop: '40px' }}>
           <p style={{ color: 'var(--text-muted)', marginBottom: '20px' }}>Your food is being prepared.</p>
@@ -660,7 +660,7 @@ function App() {
         textAlign: 'center',
         background: 'linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url(https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1000&q=80) center/cover'
       }}>
-        <h1 style={{ fontSize: '3rem', color: 'var(--primary)', marginBottom: '0.5rem' }}>THE MARWAD FOOD ORDERING SYSTEM</h1>
+        <h1 style={{ fontSize: '3rem', color: 'var(--primary)', marginBottom: '0.5rem' }}>MARWAD DINING MENU</h1>
         <p style={{ color: '#fff', marginBottom: '2rem', fontSize: '1.2rem' }}>Veg & Non Veg • Cafe & Family Restaurant</p>
 
         <div className="glass-panel" style={{ padding: '30px', maxWidth: '400px', width: '100%' }}>
@@ -730,7 +730,7 @@ function App() {
           {tableId === 'Delivery' ? '🏡 HOME DELIVERY' : 'WELCOME TO'}
         </h1>
         <h2 style={{ fontSize: tableId === 'Delivery' ? '2rem' : '3rem', color: '#fff', marginBottom: '2.5rem', fontWeight: '900' }}>
-          THE MARWAD FOOD ORDERING SYSTEM
+          MARWAD DINING MENU
         </h2>
         {tableId === 'Delivery' ? (
           <p style={{ color: 'var(--primary)', marginBottom: '20px', fontWeight: 'bold' }}>
