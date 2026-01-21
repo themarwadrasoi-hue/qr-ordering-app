@@ -14,6 +14,7 @@ import AdminReports from './components/AdminReports'
 import AdminTableBills from './components/AdminTableBills'
 import AdminInventory from './components/AdminInventory'
 import AdminExpenses from './components/AdminExpenses'
+import AdminNewOrderModal from './components/AdminNewOrderModal'
 import CallWaiterButton from './components/CallWaiterButton'
 import WaiterCallNotification from './components/WaiterCallNotification'
 import TableBillView from './components/TableBillView'
@@ -68,6 +69,7 @@ function App() {
   const [distanceDebug, setDistanceDebug] = useState(null)
   const [locationError, setLocationError] = useState(null)
   const [isTooFar, setIsTooFar] = useState(false)
+  const [isAdminOrderModalOpen, setIsAdminOrderModalOpen] = useState(false)
 
   // Initialize Socket Connection
   useEffect(() => {
@@ -437,7 +439,31 @@ function App() {
     return (
       <div className="container" style={{ paddingBottom: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-md)' }}>
-          <h1 className="no-print" style={{ color: 'var(--primary)', margin: 0 }}>Kitchen Display (Live)</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <h1 className="no-print" style={{ color: 'var(--primary)', margin: 0 }}>Kitchen Display (Live)</h1>
+            <button
+              onClick={() => setIsAdminOrderModalOpen(true)}
+              style={{
+                background: 'linear-gradient(135deg, #FFB703 0%, #FB8500 100%)',
+                color: '#000',
+                border: 'none',
+                padding: '10px 20px',
+                borderRadius: '50px',
+                fontWeight: '900',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                boxShadow: '0 4px 15px rgba(255, 183, 3, 0.4)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'transform 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              <span>➕</span> New Order
+            </button>
+          </div>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button
               onClick={toggleStoreStatus}
@@ -583,6 +609,14 @@ function App() {
           calls={waiterCalls}
           onAcknowledge={acknowledgeWaiterCall}
         />
+
+        {isAdminOrderModalOpen && (
+          <AdminNewOrderModal
+            menu={menu}
+            onClose={() => setIsAdminOrderModalOpen(false)}
+            onPlaceOrder={(order) => socket?.emit('place-order', order)}
+          />
+        )}
 
         <a href="/" className="no-print" style={{ display: 'block', marginTop: '40px', color: 'var(--text-secondary)', textDecoration: 'underline' }}>
           Back to Menu

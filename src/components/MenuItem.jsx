@@ -53,11 +53,11 @@ export default function MenuItem({ item, onAdd }) {
 
             <div style={{ padding: 'var(--spacing-md)', display: 'flex', flexDirection: 'column', flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--spacing-xs)' }}>
-                    <h3 style={{ fontSize: '1.125rem' }}>{item.title}</h3>
-                    <span style={{ color: 'var(--primary)', fontWeight: '700' }}>₹{currentPrice}</span>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: '800' }}>{item.title}</h3>
+                    <span style={{ color: 'var(--primary)', fontWeight: '900', fontSize: '1.1rem' }}>₹{currentPrice}</span>
                 </div>
 
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: 'var(--spacing-md)', flex: 1 }}>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 'var(--spacing-md)', flex: 1, lineHeight: '1.4' }}>
                     {item.desc}
                 </p>
 
