@@ -71,13 +71,21 @@ const loadData = () => {
             const rawData = fs.readFileSync(DATA_FILE);
             const data = JSON.parse(rawData);
 
-            if (data.orders) orders = data.orders;
-            if (data.orderHistory) orderHistory = data.orderHistory;
+            if (data.orders && Array.isArray(data.orders)) orders = data.orders;
+            if (data.orderHistory && Array.isArray(data.orderHistory)) orderHistory = data.orderHistory;
             if (data.menu) menu = data.menu;
             if (data.categories) categories = data.categories;
             if (data.whatsappNumber) whatsappNumber = data.whatsappNumber;
             if (data.tableBills) tableBills = data.tableBills;
-            if (data.restaurantLocation) restaurantLocation = data.restaurantLocation;
+
+            // Only overwrite if data has valid coordinates
+            if (data.restaurantLocation && data.restaurantLocation.latitude) {
+                restaurantLocation = data.restaurantLocation;
+            } else {
+                // Fallback/Force the hardcoded one if missing in file
+                restaurantLocation = { latitude: 26.909948, longitude: 75.722024 };
+            }
+
             if (data.inventory) inventory = data.inventory;
             if (data.expenses) expenses = data.expenses;
             if (data.isStoreOpen !== undefined) isStoreOpen = data.isStoreOpen;
