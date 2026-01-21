@@ -5,25 +5,25 @@ export default function ReviewReward({ onClose, restaurantName = "THE MARWAD FOO
     const [rating, setRating] = useState(0)
     const [submitted, setSubmitted] = useState(false)
 
-    // Actual Google Review Link
+    // Actual Google Review Link provided by user
     const googleReviewLink = "https://maps.app.goo.gl/wqDfq7TFw8Vq61Xv7?g_st=aw"
 
     const handleRating = (stars) => {
         setRating(stars)
-        if (stars >= 3) {
+        if (stars >= 4) {
             confetti({
-                particleCount: 100,
+                particleCount: 150,
                 spread: 70,
                 origin: { y: 0.6 },
-                colors: ['#FFB703', '#FFFFFF', '#FB8500']
+                colors: ['#FFD700', '#FFA500', '#FFFFFF']
             })
         }
     }
 
     const getDiscountMessage = () => {
-        if (rating === 3) return "💖 10% OFF on your next visit!"
-        if (rating === 4) return "🔥 15% OFF on your next visit!"
-        if (rating === 5) return "👑 20% OFF on your next visit!"
+        if (rating === 3) return "💖 10% OFF on your next visit! Please share why!"
+        if (rating === 4) return "🔥 15% OFF on your next visit! You are awesome!"
+        if (rating === 5) return "👑 20% OFF on your next visit! Best Customer Ever!"
         return "Thank you for your feedback!"
     }
 
@@ -96,15 +96,20 @@ export default function ReviewReward({ onClose, restaurantName = "THE MARWAD FOO
                             rel="noopener noreferrer"
                             onClick={() => setSubmitted(true)}
                             style={{
-                                ...actionButtonStyle('var(--primary)', '#000'),
+                                ...actionButtonStyle('linear-gradient(135deg, #4285F4 0%, #34A853 100%)', '#fff'),
                                 textDecoration: 'none',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                gap: '10px'
+                                gap: '15px',
+                                padding: '20px 24px',
+                                fontSize: '1.2rem',
+                                boxShadow: '0 8px 25px rgba(66, 133, 244, 0.4)',
+                                border: '2px solid rgba(255,255,255,0.1)'
                             }}
                         >
-                            <span>✍️ Post Review on Google</span>
+                            <span style={{ fontSize: '1.5rem' }}>✍️</span>
+                            <span>SUBMIT & WIN REWARD</span>
                         </a>
                     )}
 

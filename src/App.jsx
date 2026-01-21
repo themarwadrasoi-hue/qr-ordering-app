@@ -172,9 +172,6 @@ function App() {
         setIsBillOpen(false)
         setNotification("Your bill has been cleared. Thank you!")
 
-        // Show Review Reward instead of Scratch Card
-        setShowReviewReward(true)
-
         setTimeout(() => setNotification(null), 5000)
       }
     })
