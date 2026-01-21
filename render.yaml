@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: marwad-rasoi-qr-ordering
+    name: the-marwad-ordering-system
     env: node
     buildCommand: npm install && npm run build
     startCommand: npm start
