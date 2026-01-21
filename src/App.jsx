@@ -492,6 +492,37 @@ function App() {
                 <AdminOrderCard key={order.id} order={order} onComplete={completeOrder} />
               ))
             )}
+
+            {/* Completed Today section */}
+            <div style={{ marginTop: '40px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '20px' }}>
+              <h3 style={{ color: 'var(--text-secondary)', marginBottom: '15px', fontSize: '1rem' }}>✅ Completed Today</h3>
+              {orderHistory.filter(o => new Date(o.completedAt || o.timestamp).toDateString() === new Date().toDateString()).length === 0 ? (
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No orders completed today yet.</p>
+              ) : (
+                orderHistory
+                  .filter(o => new Date(o.completedAt || o.timestamp).toDateString() === new Date().toDateString())
+                  .reverse()
+                  .map(order => (
+                    <div key={order.id} style={{
+                      background: 'rgba(255,255,255,0.03)',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      marginBottom: '10px',
+                      borderLeft: '4px solid var(--success)',
+                      fontSize: '0.9rem'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <strong>Table {order.tableId}</strong>
+                        <span style={{ color: 'var(--text-muted)' }}>{new Date(order.completedAt || order.timestamp).toLocaleTimeString()}</span>
+                      </div>
+                      <div style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>
+                        {order.items.map(i => `${i.qty}x ${i.title}`).join(', ')}
+                      </div>
+                      <div style={{ fontWeight: 'bold', marginTop: '4px', color: 'var(--primary)' }}>₹{order.total}</div>
+                    </div>
+                  ))
+              )}
+            </div>
           </div>
         ) : adminView === 'bills' ? (
           <AdminTableBills tableBills={tableBills} onClearBill={clearTableBill} />

@@ -6,12 +6,15 @@ export default function AdminReports({ history }) {
     const currentMonth = new Date().getMonth()
     const currentYear = new Date().getFullYear()
 
-    // Filter for Today's sales
-    const todaysOrders = history.filter(o => new Date(o.completedAt).toDateString() === today)
+    // Filter for Today's sales (Normalized to local date)
+    const todaysOrders = history.filter(o => {
+        const date = new Date(o.completedAt || o.timestamp)
+        return date.toLocaleDateString() === new Date().toLocaleDateString()
+    })
 
     // Filter for This Month's sales
     const thisMonthOrders = history.filter(o => {
-        const orderDate = new Date(o.completedAt)
+        const orderDate = new Date(o.completedAt || o.timestamp)
         return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear
     })
 

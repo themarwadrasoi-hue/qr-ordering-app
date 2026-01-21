@@ -121,7 +121,7 @@ const saveData = () => {
         } catch (err) {
             console.error('❌ Error preparing data for save:', err);
         }
-    }, 1000); // Debounce save by 1 second
+    }, 500); // Faster debounce: 500ms
 };
 
 // Load data on startup
