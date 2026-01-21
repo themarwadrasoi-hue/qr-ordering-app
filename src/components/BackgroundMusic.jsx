@@ -2,98 +2,105 @@ import React, { useState, useRef, useEffect } from 'react'
 
 export default function BackgroundMusic({ isPlaying = true, playlist = ["https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"] }) {
     const [muted, setMuted] = useState(false)
-    const [userInteracted, setUserInteracted] = useState(false)
-    const [currentSrc, setCurrentSrc] = useState("")
+    const [hasBegan, setHasBegan] = useState(false)
+    const [isActuallyPlaying, setIsActuallyPlaying] = useState(false)
     const audioRef = useRef(null)
+    const playlistRef = useRef(playlist)
 
-    // Pick a random song from playlist on mount or when playlist changes
-    useEffect(() => {
-        if (playlist && playlist.length > 0) {
-            const randomIndex = Math.floor(Math.random() * playlist.length)
-            setCurrentSrc(playlist[randomIndex])
-        }
-    }, [playlist])
-
-    // Suggestion: Replace this URL with your own hosted MP3 for specific taste
-    // Current: "SoundHelix Song 1" (Placeholder)
-    const MUSIC_URL = currentSrc
+    // Select a random song once
+    const [currentSrc] = useState(() => {
+        const list = playlistRef.current || []
+        return list[Math.floor(Math.random() * list.length)]
+    })
 
     useEffect(() => {
-        // Attempt auto-play on mount or src change
-        if (audioRef.current && isPlaying && !muted) {
-            // Light background volume
-            audioRef.current.volume = 0.1
+        const audio = audioRef.current
+        if (!audio) return
 
-            // Explicitly load and play for new sources
-            audioRef.current.load()
+        audio.volume = 0.1
 
-            const playPromise = audioRef.current.play()
+        const handlePlay = () => setIsActuallyPlaying(true)
+        const handlePause = () => setIsActuallyPlaying(false)
 
-            if (playPromise !== undefined) {
-                playPromise.catch(error => {
-                    console.log("Auto-play prevented (User interaction needed):", error)
-                })
-            }
-        } else if (audioRef.current) {
-            audioRef.current.pause()
+        audio.addEventListener('play', handlePlay)
+        audio.addEventListener('pause', handlePause)
+
+        if (isPlaying && !muted && hasBegan) {
+            audio.play().catch(e => console.log("Playback failed", e))
+        } else {
+            audio.pause()
         }
 
-        // Cleanup: Stop audio when component unmounts (navigating away)
         return () => {
-            if (audioRef.current) {
-                audioRef.current.pause()
-                audioRef.current.src = "" // Release resources
-            }
+            audio.removeEventListener('play', handlePlay)
+            audio.removeEventListener('pause', handlePause)
         }
-    }, [isPlaying, muted, currentSrc])
+    }, [isPlaying, muted, hasBegan])
 
-    // Handle User Interaction to unlock Audio Context
+    // Global listener to unlock audio on first interaction
     useEffect(() => {
-        const unlockAudio = () => {
-            if (!userInteracted) {
-                setUserInteracted(true)
-                if (audioRef.current && isPlaying && !muted) {
-                    audioRef.current.play().catch(e => console.log("Play error", e))
-                }
+        const unlock = () => {
+            if (!hasBegan) {
+                setHasBegan(true)
+                // Remove listener after first interaction
+                window.removeEventListener('pointerdown', unlock)
+                window.removeEventListener('keydown', unlock)
             }
         }
-
-        window.addEventListener('click', unlockAudio)
+        window.addEventListener('pointerdown', unlock)
+        window.addEventListener('keydown', unlock)
         return () => {
-            window.removeEventListener('click', unlockAudio)
+            window.removeEventListener('pointerdown', unlock)
+            window.removeEventListener('keydown', unlock)
         }
-    }, [userInteracted, isPlaying, muted])
+    }, [hasBegan])
 
     return (
         <div style={{
             position: 'fixed',
-            bottom: '20px',
-            left: '20px',
-            zIndex: 9999, // Above most things
+            bottom: '25px',
+            left: '25px',
+            zIndex: 10001,
         }}>
-            <audio ref={audioRef} loop src={MUSIC_URL} />
+            <audio ref={audioRef} loop src={currentSrc} />
 
             <button
-                onClick={() => setMuted(!muted)}
+                onClick={() => {
+                    setHasBegan(true)
+                    setMuted(!muted)
+                }}
+                className={!isActuallyPlaying && isPlaying ? "pulse-audio" : ""}
                 style={{
-                    width: '50px',
-                    height: '50px',
+                    width: '56px',
+                    height: '56px',
                     borderRadius: '50%',
-                    background: muted ? 'rgba(0,0,0,0.6)' : 'var(--primary)',
-                    color: muted ? '#aaa' : '#000',
-                    border: 'none',
-                    boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+                    background: muted || !isActuallyPlaying ? 'rgba(0,0,0,0.8)' : 'var(--primary)',
+                    color: muted || !isActuallyPlaying ? '#888' : '#000',
+                    border: '2px solid rgba(255,255,255,0.1)',
+                    boxShadow: isActuallyPlaying ? '0 0 20px var(--primary-glow)' : '0 4px 15px rgba(0,0,0,0.5)',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '1.5rem',
-                    transition: 'all 0.3s ease'
+                    fontSize: '1.4rem',
+                    transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
                 }}
-                title={muted ? "Unmute Music" : "Mute Music"}
             >
-                {muted ? '🔇' : '🎵'}
+                {muted || !isActuallyPlaying ? '🔇' : '🎵'}
             </button>
+
+            <style>{`
+                @keyframes audioPulse {
+                    0% { transform: scale(1); box-shadow: 0 0 0 0 var(--primary-glow); }
+                    50% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(255,183,3,0); }
+                    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,183,3,0); }
+                }
+                .pulse-audio {
+                    animation: audioPulse 2s infinite;
+                    background: var(--primary) !important;
+                    color: #000 !important;
+                }
+            `}</style>
         </div>
     )
 }

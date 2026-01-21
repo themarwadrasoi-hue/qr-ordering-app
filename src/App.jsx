@@ -723,13 +723,37 @@ function App() {
         <h2 style={{ fontSize: tableId === 'Delivery' ? '2rem' : '3rem', color: '#fff', marginBottom: '2.5rem', fontWeight: '900' }}>
           THE MARWAD FOOD ORDERING SYSTEM
         </h2>
-        {tableId === 'Delivery' && (
+        {tableId === 'Delivery' ? (
           <p style={{ color: 'var(--primary)', marginBottom: '20px', fontWeight: 'bold' }}>
             📍 Orders delivered within 1KM radius only
           </p>
+        ) : isTooFar && (
+          <div style={{
+            background: 'rgba(239, 71, 111, 0.2)',
+            color: 'var(--danger)',
+            padding: '15px',
+            borderRadius: '12px',
+            marginBottom: '20px',
+            border: '2px solid var(--danger)',
+            fontWeight: 'bold',
+            animation: 'pulseSubtle 2s infinite'
+          }}>
+            🚫 You are out of Restaurant Range!<br />
+            Please scan the QR code while you are inside the restaurant.
+          </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', width: '100%', maxWidth: '500px' }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '20px',
+          width: '100%',
+          maxWidth: '500px',
+          opacity: (isTooFar && tableId !== 'Delivery') ? 0.4 : 1,
+          pointerEvents: (isTooFar && tableId !== 'Delivery') ? 'none' : 'auto',
+          filter: (isTooFar && tableId !== 'Delivery') ? 'grayscale(1)' : 'none',
+          transition: 'all 0.5s ease'
+        }}>
           <button
             onClick={() => {
               setSelectedMenuType('cafe')
@@ -789,15 +813,7 @@ function App() {
           Table Number: <strong style={{ color: 'var(--primary)' }}>{tableId}</strong>
         </div>
 
-        {/* Welcome Music after QR Scan */}
-        {!isAdmin && customerView === 'choice' && (
-          <BackgroundMusic
-            playlist={[
-              "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3",
-              "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3"
-            ]}
-          />
-        )}
+        {/* Welcome Music moved to global container */}
       </div >
     )
   }
@@ -942,21 +958,24 @@ const getTabStyle = (isActive) => ({
 })
 
 const choiceButtonStyle = (bg, isSecondary = false) => ({
-  padding: '25px 15px',
-  fontSize: '1.1rem',
-  fontWeight: 'bold',
+  padding: '30px 15px',
+  fontSize: '1.2rem',
+  fontWeight: '800',
   background: bg,
   color: isSecondary ? '#fff' : '#000',
-  border: isSecondary ? '2px solid rgba(255,255,255,0.2)' : 'none',
-  borderRadius: '24px',
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: '28px',
   cursor: 'pointer',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
   gap: '12px',
-  boxShadow: isSecondary ? 'none' : '0 10px 20px rgba(0,0,0,0.3)',
-  transition: 'all 0.2s'
+  boxShadow: '0 15px 35px rgba(0,0,0,0.4)',
+  transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+  backdropFilter: 'blur(5px)',
+  textTransform: 'uppercase',
+  letterSpacing: '0.02em'
 })
 
 function AdminLogin({ onLogin }) {
