@@ -19,6 +19,7 @@ import ScratchCard from './components/ScratchCard'
 import CallWaiterButton from './components/CallWaiterButton'
 import WaiterCallNotification from './components/WaiterCallNotification'
 import TableBillView from './components/TableBillView'
+import BackgroundMusic from './components/BackgroundMusic'
 
 // Socket.io
 import { io } from 'socket.io-client'
@@ -538,6 +539,9 @@ function App() {
         <a href="/" className="no-print" style={{ display: 'block', marginTop: '40px', color: 'var(--text-secondary)', textDecoration: 'underline' }}>
           Back to Menu
         </a>
+
+        {/* Admin Background Music */}
+        <BackgroundMusic src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" />
       </div>
     )
   }
@@ -719,11 +723,6 @@ function App() {
               socket?.emit('call-waiter', { tableId, timestamp: Date.now() })
               setNotification("Service requested for Table " + tableId)
 
-              const serviceNum = ['919602755557', '919602855558', '919588894347', '919521751114', '919782222673'];
-              const randomNum = serviceNum[Math.floor(Math.random() * serviceNum.length)];
-              const text = encodeURIComponent(`Table ${tableId} needs service/waiter!`);
-              window.open(`https://wa.me/${randomNum}?text=${text}`, '_blank');
-
               setTimeout(() => setNotification(null), 5000)
             }}
             style={choiceButtonStyle('rgba(255,255,255,0.1)', true)}
@@ -768,6 +767,11 @@ function App() {
           socket={socket}
           serviceNumbers={['919602755557', '919602855558', '919588894347', '919521751114', '919782222673']}
         />
+      )}
+
+      {/* Background Music for Customers */}
+      {!isAdmin && customerView === 'menu' && (
+        <BackgroundMusic />
       )}
 
       {isCartOpen && (

@@ -25,11 +25,6 @@ export default function CallWaiterButton({ tableId, socket, onCallPlaced, servic
         if (isCalling || !socket) return
 
         setIsCalling(true)
-        if (serviceNumbers && serviceNumbers.length > 0) {
-            const randomNum = serviceNumbers[Math.floor(Math.random() * serviceNumbers.length)];
-            const text = encodeURIComponent(`Table ${tableId} needs service/waiter!`);
-            window.open(`https://wa.me/${randomNum}?text=${text}`, '_blank');
-        }
 
         // IMPORTANT: Emit to socket for Admin Panel Audio
         if (socket) {
