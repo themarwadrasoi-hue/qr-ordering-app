@@ -261,27 +261,39 @@ io.on('connection', (socket) => {
     socket.on('clear-table-bill', (tableId) => {
         console.log(`Clearing bill for Table ${tableId}`);
         if (tableBills[tableId]) {
-            // Find orders for this table and mark them as paid/archived if needed
-            // For now, we just move them to history if not already there (which they should be if completed)
-            // But usually active orders are part of the bill.
-
-            // Move active orders to history if bill is cleared (assuming payment means completion)
             const tableOrders = tableBills[tableId].orders;
             const totalAmount = tableBills[tableId].total;
 
-            tableOrders.forEach(o => {
-                if (orders.find(ao => ao.id === o.id)) {
-                    orderHistory.push({ ...o, status: 'completed', completedAt: Date.now() });
-                }
+            // Consolidate all items from all orders of this table into one final history entry
+            const consolidatedItems = [];
+            tableOrders.forEach(order => {
+                order.items.forEach(item => {
+                    consolidatedItems.push(item);
+                });
             });
-            orders = orders.filter(o => o.tableId !== tableId); // Remove active orders for this table
+
+            // Push single consolidated bill to history
+            const finalBillRecord = {
+                id: `BILL-${Date.now()}`,
+                tableId: tableId,
+                items: consolidatedItems,
+                total: totalAmount,
+                ordersCount: tableOrders.length,
+                completedAt: Date.now(),
+                status: 'completed'
+            };
+
+            orderHistory.push(finalBillRecord);
+
+            // Clean up: Remove active orders from the system for this table
+            orders = orders.filter(o => o.tableId !== tableId);
 
             delete tableBills[tableId];
             io.emit('table-bills-updated', tableBills);
             io.emit('orders-updated', orders);
             io.emit('history-updated', orderHistory);
 
-            // Notify the specific table that bill is cleared (Trigger Scratch Card)
+            // Notify the specific table that bill is cleared (Trigger Review Reward)
             io.emit('table-bill-cleared', { tableId, totalAmount });
             saveData();
         }
@@ -292,19 +304,9 @@ io.on('connection', (socket) => {
         console.log(`Order ${orderId} status updated to ${status}`);
 
         if (status === 'completed') {
-            const completedOrder = orders.find(o => o.id === orderId);
-            if (completedOrder) {
-                // Deduct Inventory
-                completedOrder.items.forEach(item => {
-                    // Logic to deduct items... simplified for now as mapping is complex
-                    // Ideally each menu item would have an 'ingredients' array
-                });
-
-                orderHistory.push({ ...completedOrder, status: 'completed', completedAt: Date.now() });
-                orders = orders.filter(o => o.id !== orderId);
-
-                io.emit('history-updated', orderHistory);
-            }
+            // Just remove from active orders. 
+            // It will be added to history LATER when the WHOLE BILL is cleared (paid).
+            orders = orders.filter(o => o.id !== orderId);
         } else {
             orders = orders.map(o => o.id === orderId ? { ...o, status } : o);
         }

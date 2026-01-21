@@ -14,12 +14,11 @@ import AdminReports from './components/AdminReports'
 import AdminTableBills from './components/AdminTableBills'
 import AdminInventory from './components/AdminInventory'
 import AdminExpenses from './components/AdminExpenses'
-import ScratchCard from './components/ScratchCard'
-
 import CallWaiterButton from './components/CallWaiterButton'
 import WaiterCallNotification from './components/WaiterCallNotification'
 import TableBillView from './components/TableBillView'
 import BackgroundMusic from './components/BackgroundMusic'
+import ReviewReward from './components/ReviewReward'
 
 // Socket.io
 import { io } from 'socket.io-client'
@@ -55,8 +54,7 @@ function App() {
   const [restaurantLocation, setRestaurantLocation] = useState(null) // { latitude, longitude }
   const [inventory, setInventory] = useState([])
   const [expenses, setExpenses] = useState([])
-  const [showScratchCard, setShowScratchCard] = useState(false)
-  const [scratchCardAmount, setScratchCardAmount] = useState(0)
+  const [showReviewReward, setShowReviewReward] = useState(false)
   const [isStoreOpen, setIsStoreOpen] = useState(true) // Default true
   const [audioAllowed, setAudioAllowed] = useState(false) // User interaction required for audio
   const [distanceDebug, setDistanceDebug] = useState(null)
@@ -174,11 +172,8 @@ function App() {
         setIsBillOpen(false)
         setNotification("Your bill has been cleared. Thank you!")
 
-        // Show Scratch Card if amount > 500
-        if (data.totalAmount > 500) {
-          setScratchCardAmount(data.totalAmount)
-          setShowScratchCard(true)
-        }
+        // Show Review Reward instead of Scratch Card
+        setShowReviewReward(true)
 
         setTimeout(() => setNotification(null), 5000)
       }
@@ -775,10 +770,18 @@ function App() {
 
               setTimeout(() => setNotification(null), 5000)
             }}
-            style={choiceButtonStyle('rgba(255,255,255,0.1)', true)}
+            style={choiceButtonStyle('rgba(255,255,255,0.05)', true)}
           >
             <span style={{ fontSize: '2.5rem' }}>🔔</span>
             <span>Service Please</span>
+          </button>
+
+          <button
+            onClick={() => setShowReviewReward(true)}
+            style={choiceButtonStyle('linear-gradient(135deg, #FFD700 0%, #FFA500 100%)')}
+          >
+            <span style={{ fontSize: '2.5rem' }}>🌟</span>
+            <span>Rate & Win Discount</span>
           </button>
         </div>
 
@@ -872,10 +875,9 @@ function App() {
         />
       )}
 
-      {!isAdmin && showScratchCard && (
-        <ScratchCard
-          amount={scratchCardAmount}
-          onClose={() => setShowScratchCard(false)}
+      {!isAdmin && showReviewReward && (
+        <ReviewReward
+          onClose={() => setShowReviewReward(false)}
         />
       )}
 

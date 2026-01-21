@@ -200,18 +200,29 @@ button {
   }
 }
 
-/* --- RESPONSIVE TYPOGRAPHY --- */
+/* --- RESPONSIVE TYPOGRAPHY & LAYOUT --- */
 @media (max-width: 768px) {
   h1 {
-    font-size: 1.8rem;
+    font-size: 1.5rem;
   }
 
   h2 {
-    font-size: 1.4rem;
+    font-size: 1.25rem;
   }
 
   .container {
-    padding: var(--spacing-sm);
+    padding: 12px;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* Force tables to be scrollable of they overflow */
+  div[style*="overflowX: 'auto'"] {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    font-size: 0.8rem !important;
   }
 }
 
