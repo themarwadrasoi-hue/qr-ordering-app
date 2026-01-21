@@ -232,10 +232,12 @@ io.on('connection', (socket) => {
     // Handle Waiter Call
     socket.on('call-waiter', (data) => {
         console.log(`Waiter call from Table ${data.tableId}`);
-        // Only add if not already in list to avoid duplicates
+        // ALWAYS emit received event to trigger Admin audio/visual alerts
+        io.emit('waiter-call-received', data);
+
+        // Only add if not already in list to avoid duplicates in the main queue
         if (!waiterCalls.find(c => c.tableId === data.tableId)) {
             waiterCalls.push(data);
-            io.emit('waiter-call-received', data);
             io.emit('waiter-calls-updated', waiterCalls);
             saveData();
         }

@@ -122,6 +122,45 @@ export default function AdminQRGenerator({ restaurantLocation, onUpdateRestauran
                 gap: '40px',
                 justifyItems: 'center'
             }}>
+                {/* TEST QR CARD */}
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '20px',
+                    background: '#fff',
+                    borderRadius: '12px',
+                    color: '#000',
+                    border: '4px solid #f44336',
+                    position: 'relative',
+                    overflow: 'hidden'
+                }}>
+                    <div style={{
+                        position: 'absolute',
+                        top: '10px',
+                        left: '-25px',
+                        background: '#f44336',
+                        color: 'white',
+                        padding: '5px 30px',
+                        transform: 'rotate(-45deg)',
+                        fontSize: '0.7rem',
+                        fontWeight: 'bold'
+                    }}>FOR TESTING</div>
+                    <QRCode
+                        value={`${baseUrl}/?table=TEST`}
+                        size={180}
+                        fgColor="#000000"
+                        bgColor="#ffffff"
+                    />
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontWeight: 'bold', fontSize: '1.2rem', fontFamily: 'var(--font-display)', color: '#f44336' }}>TEST QR</div>
+                        <div style={{ fontSize: '0.6rem', color: '#666', marginTop: '4px', maxWidth: '180px', wordBreak: 'break-all' }}>
+                            {baseUrl}/?table=TEST
+                        </div>
+                    </div>
+                </div>
+
                 {/* DELIVERY QR CARD */}
                 <div style={{
                     display: 'flex',

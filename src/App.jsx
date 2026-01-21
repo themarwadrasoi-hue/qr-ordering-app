@@ -38,7 +38,15 @@ function App() {
   const [socket, setSocket] = useState(null)
 
   // Notification State
-  const [notification, setNotification] = useState(null)
+  const [notifications, setNotifications] = useState([]) // Array of { id, msg, type }
+
+  const addNotification = (msg, type = 'info') => {
+    const id = Date.now() + Math.random()
+    setNotifications(prev => [...prev, { id, msg, type }])
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id))
+    }, 5000)
+  }
 
   // Data State (Synced via Server)
   const [menu, setMenu] = useState(initialMenuItems)
@@ -92,22 +100,21 @@ function App() {
 
     newSocket.on('store-status-updated', (status) => {
       setIsStoreOpen(status)
-      if (!status) setNotification("⛔ The Store is now CLOSED.")
+      if (!status) addNotification("⛔ The Store is now CLOSED.", 'error')
     })
 
     newSocket.on('order-error', (msg) => {
-      setNotification("❌ " + msg)
+      addNotification("❌ " + msg, 'error')
     })
 
     newSocket.on('new-order', (order) => {
       // Show notification on Admin page
       if (window.location.pathname.startsWith('/admin')) {
-        setNotification(`New Order from Table ${order.tableId || 'Unknown'}`)
+        addNotification(`New Order from Table ${order.tableId || 'Unknown'}`, 'order')
         try {
           const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3')
           audio.play()
         } catch (e) { }
-        setTimeout(() => setNotification(null), 5000)
       }
     })
 
@@ -152,7 +159,7 @@ function App() {
       if (Notification.permission === 'granted') {
         new Notification(`🔔 Table ${call.tableId} needs service!`)
       }
-      setNotification(`🔔 Table ${call.tableId} Service Request!`)
+      addNotification(`🔔 Table ${call.tableId} Service Request!`, 'service')
     })
 
     newSocket.on('restaurant-location-updated', (loc) => {
@@ -170,9 +177,7 @@ function App() {
     newSocket.on('table-bill-cleared', (data) => {
       if (tableId === data.tableId) {
         setIsBillOpen(false)
-        setNotification("Your bill has been cleared. Thank you!")
-
-        setTimeout(() => setNotification(null), 5000)
+        addNotification("Your bill has been cleared. Thank you!", 'success')
       }
     })
 
@@ -191,7 +196,8 @@ function App() {
             )
             setDistanceDebug(dist.toFixed(3) + ' km')
             const limit = tableId === 'Delivery' ? 1.0 : 0.2
-            if (dist > limit) setIsTooFar(true)
+            if (tableId === 'TEST') setIsTooFar(false) // TEST table bypass
+            else if (dist > limit) setIsTooFar(true)
             else setIsTooFar(false)
           },
           (err) => {
@@ -301,9 +307,8 @@ function App() {
           }
 
           // For Dine-in: Enforce Geofencing if Restaurant Location is set
-          if (restaurantLocation) {
-            setNotification("📍 Location access required to verify you are at the restaurant.");
-            setTimeout(() => setNotification(null), 6000);
+          if (restaurantLocation && tableId !== 'TEST') {
+            addNotification("📍 Location access required to verify you are at the restaurant.", 'error');
             return;
           }
 
@@ -329,9 +334,9 @@ function App() {
     }
 
     // Geofencing Logic
-    if (restaurantLocation) {
+    if (restaurantLocation && tableId !== 'TEST') {
       if (!pos) {
-        setNotification("📍 Location required to place order.");
+        addNotification("📍 Location required to place order.", 'error');
         return;
       }
       const dist = calculateDistance(
@@ -801,9 +806,7 @@ function App() {
           <button
             onClick={() => {
               socket?.emit('call-waiter', { tableId, timestamp: Date.now() })
-              setNotification("Service requested for Table " + tableId)
-
-              setTimeout(() => setNotification(null), 5000)
+              addNotification("Service requested for Table " + tableId, 'service')
             }}
             style={choiceButtonStyle('rgba(255,255,255,0.05)', true)}
           >
@@ -825,6 +828,11 @@ function App() {
         </div>
 
         {/* Welcome Music moved to global container */}
+        {showReviewReward && (
+          <ReviewReward
+            onClose={() => setShowReviewReward(false)}
+          />
+        )}
       </div >
     )
   }
@@ -897,42 +905,56 @@ function App() {
           onClose={() => setIsBillOpen(false)}
           onCallWaiter={() => {
             socket?.emit('call-waiter', { tableId, timestamp: Date.now() })
-            setNotification("Service requested for payment.")
-            setTimeout(() => setNotification(null), 3000)
+            addNotification("Service requested for payment.", 'service')
           }}
         />
       )}
 
-      {!isAdmin && showReviewReward && (
-        <ReviewReward
-          onClose={() => setShowReviewReward(false)}
-        />
-      )}
-
-      {notification && (
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          background: '#ffc107',
-          color: '#000',
-          padding: '16px 32px',
-          borderRadius: 'var(--radius-md)',
-          fontWeight: '900',
-          zIndex: 9999,
-          boxShadow: '0 0 40px rgba(255, 193, 7, 0.4)',
-          border: '3px solid #000',
-          animation: 'popIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px'
-        }}>
-          <span style={{ fontSize: '1.5rem' }}>🔔</span>
-          {notification}
-          <button onClick={() => setNotification(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}>×</button>
-        </div>
-      )}
+      <div style={{
+        position: 'fixed',
+        top: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 9999,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '10px',
+        width: '100%',
+        maxWidth: '400px',
+        padding: '0 20px',
+        pointerEvents: 'none'
+      }}>
+        {notifications.map(n => (
+          <div key={n.id} style={{
+            background: n.type === 'service' ? '#ffc107' : n.type === 'error' ? 'var(--danger)' : n.type === 'success' ? '#4caf50' : '#333',
+            color: n.type === 'service' ? '#000' : '#fff',
+            padding: '12px 20px',
+            borderRadius: 'var(--radius-md)',
+            fontWeight: '800',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+            border: '2px solid rgba(255,255,255,0.1)',
+            animation: 'popIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+            pointerEvents: 'auto'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '1.2rem' }}>
+                {n.type === 'service' ? '🔔' : n.type === 'order' ? '📜' : n.type === 'success' ? '✅' : 'ℹ️'}
+              </span>
+              {n.msg}
+            </div>
+            <button
+              onClick={() => setNotifications(prev => prev.filter(nn => nn.id !== n.id))}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'inherit', opacity: 0.7 }}
+            >
+              ×
+            </button>
+          </div>
+        ))}
+      </div>
 
       {/* DEBUG FOOTER (Temporary for Verification) */}
       {!isAdmin && (
