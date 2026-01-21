@@ -3,7 +3,7 @@
   "appName": "THE MARWAD FOOD ORDERING SYSTEM",
   "webDir": "dist",
   "server": {
-    "url": "https://qr-ordering-app-12321.onrender.com",
+    "androidScheme": "https",
     "cleartext": true
   }
 }
