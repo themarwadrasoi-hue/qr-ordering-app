@@ -1,13 +1,10 @@
 services:
   - type: web
     name: the-marwad-ordering-system
-    env: node
+    runtime: node
+    plan: free
     buildCommand: npm install && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_VERSION
         value: 18.17.0
-    disk:
-      name: data-storage
-      mountPath: /opt/render/project/src/data
-      sizeGB: 1
