@@ -5,8 +5,8 @@ export default function ReviewReward({ onClose, restaurantName = "THE MARWAD FOO
     const [rating, setRating] = useState(0)
     const [submitted, setSubmitted] = useState(false)
 
-    // Replace with your actual Google Review Link
-    const googleReviewLink = "https://g.page/r/YOUR_REVIEW_LINK_HERE/review"
+    // Actual Google Review Link
+    const googleReviewLink = "https://maps.app.goo.gl/wqDfq7TFw8Vq61Xv7?g_st=aw"
 
     const handleRating = (stars) => {
         setRating(stars)
