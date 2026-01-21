@@ -1,7 +1,7 @@
 services:
   - type: web
     name: the-marwad-ordering-system
-    runtime: node
+    env: node
     plan: free
     buildCommand: npm install && npm run build
     startCommand: npm start
