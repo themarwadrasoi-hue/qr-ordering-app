@@ -301,8 +301,7 @@ function App() {
 
           // For delivery, show error and don't proceed
           if (tableId === 'Delivery') {
-            setNotification("📍 Location access is required for Delivery. Enable permissions.");
-            setTimeout(() => setNotification(null), 6000);
+            addNotification("📍 Location access is required for Delivery. Enable permissions.", 'error');
             return;
           }
 
@@ -319,7 +318,7 @@ function App() {
       )
     } else {
       if (restaurantLocation) {
-        setNotification("📍 Browser doesn't support location. Cannot verify position.");
+        addNotification("📍 Browser doesn't support location. Cannot verify position.", 'error');
         return;
       }
       sendOrderCheck();
@@ -329,7 +328,7 @@ function App() {
   // Modified sendOrder to enforce location check
   const sendOrderCheck = (pos = null) => {
     if (!isStoreOpen) {
-      setNotification("⛔ Store is CLOSED. Cannot place order.");
+      addNotification("⛔ Store is CLOSED. Cannot place order.", 'error');
       return;
     }
 
@@ -350,8 +349,7 @@ function App() {
       const limit = tableId === 'Delivery' ? 1.0 : 0.2;
 
       if (dist > limit) {
-        setNotification(`📍 You are too far to order! (${dist.toFixed(2)}km). Max: ${limit}km`);
-        setTimeout(() => setNotification(null), 6000);
+        addNotification(`📍 You are too far to order! (${dist.toFixed(2)}km). Max: ${limit}km`, 'error');
         return;
       }
     }
@@ -414,8 +412,7 @@ function App() {
   const addToCart = (item) => {
     // Geofence Block for Add to Cart
     if (isTooFar) {
-      setNotification("🚫 You are too far from the restaurant to order!")
-      setTimeout(() => setNotification(null), 3000)
+      addNotification("🚫 You are too far from the restaurant to order!", 'error')
       return
     }
 
@@ -426,8 +423,7 @@ function App() {
       }
       return [...prev, { ...item, qty: 1 }]
     })
-    setNotification(`Added ${item.title} to cart`)
-    setTimeout(() => setNotification(null), 1500)
+    addNotification(`Added ${item.title} to cart`, 'success')
   }
 
   // Admin View
