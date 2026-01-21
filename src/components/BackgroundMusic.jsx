@@ -19,20 +19,31 @@ export default function BackgroundMusic({ isPlaying = true, playlist = ["https:/
     const MUSIC_URL = currentSrc
 
     useEffect(() => {
-        // Attempt auto-play on mount
+        // Attempt auto-play on mount or src change
         if (audioRef.current && isPlaying && !muted) {
-            // Low volume for background
-            audioRef.current.volume = 0.2
+            // Light background volume
+            audioRef.current.volume = 0.1
+
+            // Explicitly load and play for new sources
+            audioRef.current.load()
+
             const playPromise = audioRef.current.play()
 
             if (playPromise !== undefined) {
                 playPromise.catch(error => {
                     console.log("Auto-play prevented (User interaction needed):", error)
-                    // We don't force it, just wait for interaction
                 })
             }
         } else if (audioRef.current) {
             audioRef.current.pause()
+        }
+
+        // Cleanup: Stop audio when component unmounts (navigating away)
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.pause()
+                audioRef.current.src = "" // Release resources
+            }
         }
     }, [isPlaying, muted, currentSrc])
 
@@ -48,7 +59,9 @@ export default function BackgroundMusic({ isPlaying = true, playlist = ["https:/
         }
 
         window.addEventListener('click', unlockAudio)
-        return () => window.removeEventListener('click', unlockAudio)
+        return () => {
+            window.removeEventListener('click', unlockAudio)
+        }
     }, [userInteracted, isPlaying, muted])
 
     return (
