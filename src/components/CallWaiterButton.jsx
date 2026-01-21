@@ -26,11 +26,14 @@ export default function CallWaiterButton({ tableId, socket, onCallPlaced, servic
 
         setIsCalling(true)
         if (serviceNumbers && serviceNumbers.length > 0) {
-            // Pick a random number to alert
             const randomNum = serviceNumbers[Math.floor(Math.random() * serviceNumbers.length)];
             const text = encodeURIComponent(`Table ${tableId} needs service/waiter!`);
-            // Open WhatsApp in background/new tab
             window.open(`https://wa.me/${randomNum}?text=${text}`, '_blank');
+        }
+
+        // IMPORTANT: Emit to socket for Admin Panel Audio
+        if (socket) {
+            socket.emit('call-waiter', { tableId: tableId, timestamp: Date.now() });
         }
 
         if (onCallPlaced) onCallPlaced()

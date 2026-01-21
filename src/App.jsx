@@ -397,17 +397,22 @@ function App() {
 
   // Local Cart Logic (Client Only)
   const addToCart = (item) => {
+    // Geofence Block for Add to Cart
+    if (isTooFar) {
+      setNotification("🚫 You are too far from the restaurant to order!")
+      setTimeout(() => setNotification(null), 3000)
+      return
+    }
+
     setCart(prev => {
       const existing = prev.find(i => i.id === item.id && i.variant === item.variant)
       if (existing) {
-        return prev.map(i =>
-          (i.id === item.id && i.variant === item.variant)
-            ? { ...i, qty: i.qty + 1 }
-            : i
-        )
+        return prev.map(i => i.id === item.id && i.variant === item.variant ? { ...i, qty: i.qty + 1 } : i)
       }
       return [...prev, { ...item, qty: 1 }]
     })
+    setNotification(`Added ${item.title} to cart`)
+    setTimeout(() => setNotification(null), 1500)
   }
 
   // Admin View
@@ -596,8 +601,6 @@ function App() {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
-        padding: '20px',
         textAlign: 'center',
         background: 'linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url(https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1000&q=80) center/cover'
       }}>
