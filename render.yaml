@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: the-marwad-ordering-system
+    name: marwad-food-ordering-final-v1
     env: node
     plan: free
     buildCommand: npm install && npm run build
